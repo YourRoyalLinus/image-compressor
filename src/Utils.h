@@ -84,7 +84,6 @@ class Utils{
 
             return timestamp;
         }
-
         /*
             Function that parses a full or relative file path and returns true if the file type is valid/is one of: .bmp, .jpeg, .png, .tif, or false otherwise
         */
@@ -101,19 +100,29 @@ class Utils{
         }
         
         /*
-            Function that split's a string by "," and returns a vector of string tokens seperated by delim character
+            Function that split's a string by "," and returns a vector of string tokens seperated by delim character. Removes space character if it is index 0 of a token.
         */
         static std::vector<std::string> StringSplit(std::string s, char delim) {
             std::vector<std::string> tokens;
             std::size_t ix = s.find(delim);
             while (ix != std::string::npos) {
-                auto val = s.substr(0, ix);
-                tokens.push_back(s.substr(0, ix));
+                auto val = s[0];
+                if(std::isspace(val)){ //Excludes a leading space from the token
+                    tokens.push_back(s.substr(1, ix-1));
+                }
+                else{
+                    tokens.push_back(s.substr(0, ix));
+                }            
                 s.erase(0, ix + 1);
                 ix = s.find(delim);
             }
             if (s.size() > 0) {
-                tokens.push_back(s); //captures the text after the last comma
+                if(std::isspace(s[0])){ //captures the text after the last comma
+                    tokens.push_back(s.substr(1, s.size())); //Excludes a leading space from the token  
+                }
+                else{
+                    tokens.push_back(s);
+                }  
             }
             return tokens;
         }

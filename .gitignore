@@ -33,4 +33,5 @@
 
 *.vscode
 /images*
+/lib/ImageMagick*
 CMakeLists.txt

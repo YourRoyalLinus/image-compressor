@@ -23,28 +23,6 @@ class ImageCompressor{
             int arrloc;
             float freq;
         };
-        struct Header{
-            std::string signature = "0100001001001101";
-            int fileSize;
-            int64_t reserved = 0;
-            int dataOffset;
-        };
-        struct InfoHeader{
-            int headerSize = 40;
-            int height;
-            int width;
-            int planes = 1;
-            int bitsPerPixel;
-            int compression = 0;
-            int imageSize = 0;
-            int xPixelsPerM = 0;
-            int yPixelsPerM = 0;
-            int colorsUsed = 0;
-            int importantColors = 0;
-        };
-        struct ColorTable{
-
-        };
         ImageCompressor();
         ~ImageCompressor();
 
@@ -65,13 +43,10 @@ class ImageCompressor{
         void EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes);
 
         int** imageArray;
-        char* headerData;
-        struct Header* bmpHeader;
-        struct InfoHeader* bmpInfoHeader;
-        
+        unsigned char headerBytes[54];
+    
         struct PixFreq* pixFreq;
         struct HuffCode* huffCode;
-
 
         FILE* file;
     

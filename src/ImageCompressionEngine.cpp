@@ -2,23 +2,22 @@
 #include "Utils.h"
 #include <chrono>
 
-ImageCompressionEngine::ImageCompressionEngine() : fileConverter(new FileConverter()), imageCompressor(new ImageCompressor()){
+ImageCompressionEngine::ImageCompressionEngine() : fileConverter(nullptr), imageCompressor(nullptr){
 }
 
 ImageCompressionEngine::ImageCompressionEngine(std::string iDir, std::string oDir, std::string tsDir, std::vector<std::string> ifiles) : inboundDir(iDir),
-outboundDir(oDir), timestampDir(tsDir), inputFiles(ifiles), fileConverter(new FileConverter()), imageCompressor(new ImageCompressor()){
+outboundDir(oDir), timestampDir(tsDir), inputFiles(ifiles), fileConverter(nullptr), imageCompressor(nullptr){
 }
 
 ImageCompressionEngine::~ImageCompressionEngine(){
-    delete fileConverter;
-    delete imageCompressor;
+    CleanupResources();
 }
 
 std::string ImageCompressionEngine::CreateLocalInboundCopy(){
     std::string destPath = inboundDir + "/" + fileInfo->fileName + "." + fileInfo->ext;
     std::experimental::filesystem::copy(fileInfo->fullFilePath, destPath);
     currentFile = fopen(destPath.c_str(), "r");
-    if(currentFile == nullptr){ //IF BRANCH NEEDED??
+    if(currentFile == nullptr){ 
         return "";
     }
     else{
@@ -28,10 +27,10 @@ std::string ImageCompressionEngine::CreateLocalInboundCopy(){
 }
 
 std::string ImageCompressionEngine::CreateLocalOutboundCopy(){
-    std::string destPath = outboundDir + "/" + fileInfo->fileName + "." + fileInfo->ext; //Should be overwritten by compressed file!
+    std::string destPath = outboundDir + "/" + fileInfo->fileName + "." + fileInfo->ext;
     std::experimental::filesystem::copy(fileInfo->fullFilePath, destPath);
     currentFile = fopen(destPath.c_str(), "r");
-    if(currentFile == nullptr){ //IF BRANCH NEEDED??
+    if(currentFile == nullptr){
         return "";
     }
     else{
@@ -47,6 +46,7 @@ int ImageCompressionEngine::StartBatchCompression(){
     for(unsigned i = 0; i < inputFiles.size(); i++){
         try{
             executeStart = std::chrono::system_clock::now();
+            AllocResources();
             std::string f = inputFiles[i];
 
             fileInfo = fileConverter->ParseFile(f);
@@ -59,20 +59,25 @@ int ImageCompressionEngine::StartBatchCompression(){
             }
 
             fileInfo = fileConverter->ParseFile(outboundFile);
+            fileInfo->tmpPath = outboundFile;
+
             fileConverter->ConvertFileToBMP(fileInfo);
+            
             //Compress image
             imageCompressor->CompressImageFile(fileInfo);
 
-            fileConverter->ConvertFileToOriginal(fileInfo);
-            fileInfo->compressedSize = Utils::GetFileSize(fileInfo->fullFilePath);
+            fileInfo->encodedSize = fileConverter->SaveEncodedDataFile(fileInfo);
+            if(fileInfo->encodedSize < 0){
+                std::cout << "Error reading encoded file information" << std::endl;
+                exit(-1);
+            }            
 
-            //Delete the tmp huffman .txt file
-            //If the original file is not .bmp, delete the tmp .bmp file
-            //CleanupFiles(fileInfo);
-            
+            CleanupFiles(fileInfo);
+
             executeEnd = std::chrono::system_clock::now();
             DisplayResults();
-
+            
+            CleanupResources();
             outFiles++;
         }
         catch(std::pair<std::exception, std::string>& e){
@@ -84,15 +89,38 @@ int ImageCompressionEngine::StartBatchCompression(){
 }
 
 void ImageCompressionEngine::DisplayResults(){
-    std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::seconds>(executeEnd-executeStart).count() << " | " 
-    << fileInfo->fileName + "." + fileInfo->ext << " | " << "Initial File Size: " << fileInfo->initialSize << " | " 
-    << "Compressed File Size: " << fileInfo->compressedSize << std::endl;
+    std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::minutes>(executeEnd-executeStart).count() << ":" 
+                                    << std::chrono::duration_cast<std::chrono::seconds>(executeEnd-executeStart).count() << ":"
+                                    << std::chrono::duration_cast<std::chrono::milliseconds>(executeEnd-executeStart).count() 
+                                    << "s| " 
+    << fileInfo->fileName + "." + fileInfo->ext << " | " << "Initial File Size: " << fileInfo->initialSize << " B | " 
+    << "Encoded Image Size: " << fileInfo->encodedSize << " B | " << std::endl;
 }
 
 /* Private Functions */
 void ImageCompressionEngine::CleanupFiles(FileConverter::FileInfo* fileInfo){
-    Utils::DeleteFile(fileInfo->tmpPath);
+    int rb = Utils::DeleteFile(fileInfo->tmpPath);
     if(fileInfo->type != FileConverter::FileType::BMP){
-        int rB = Utils::DeleteFile(fileInfo->bmpPath);
+        rb & Utils::DeleteFile(fileInfo->bmpPath);
+    }
+    if(!rb){
+        std::cout << "Error deleting the tmp & bmp files." << std::endl;
+    }
+}
+
+void ImageCompressionEngine::AllocResources(){
+    imageCompressor = new ImageCompressor();
+    fileConverter = new FileConverter();
+}
+
+void ImageCompressionEngine::CleanupResources(){
+    if(imageCompressor != nullptr){
+        delete imageCompressor;
+        imageCompressor = nullptr;
+    }
+
+    if(fileConverter != nullptr){
+        delete fileConverter;
+        fileConverter = nullptr;
     }
 }

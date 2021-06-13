@@ -20,6 +20,8 @@ class ImageCompressionEngine{
         void DisplayResults();
     private:
         void CleanupFiles(FileConverter::FileInfo* fileInfo);
+        void CleanupResources();
+        void AllocResources();
         std::string inboundDir;
         std::string outboundDir;
         std::string timestampDir;

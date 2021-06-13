@@ -54,14 +54,16 @@ int main(int argc, char **argv){
         //Promt user for image (at least one)
         std::string input;
         std::cout << "Enter the path of valid file(s) to be compressed. Seperate multiple files by a comma (,): ";
-        std::cin >> input;
-        inputFiles = Utils::StringSplit(input, ','); //todo test
+        std::getline(std::cin, input);
+        inputFiles = Utils::StringSplit(input, ','); 
         for(unsigned i = 0; i < inputFiles.size(); i++){
-            if(Utils::ValidFileType(inputFiles[i])){
+            // Check if file exists and is one of the valid types
+            if(Utils::FileExists(inputFiles[i]) && Utils::ValidFileType(inputFiles[i])){
                 continue;
             }
             else{
-                //Remove the current file from the inputFiles list, as it is not a valid file type
+                //Remove the current file from the inputFiles list, as it is not a valid file type or it does not exist
+                std::cout << inputFiles[i] << " is an invald file" <<  std::endl;
                 auto start = inputFiles.begin()+i;
                 auto end = start+1; 
                 inputFiles.erase(start, end);
@@ -72,7 +74,7 @@ int main(int argc, char **argv){
         //Get all images from cmdargs
         for(unsigned i = 1; i < argc; i++){
             //If the file from cmd args is a valid file type, include it
-            if(Utils::ValidFileType(argv[i])){
+            if(Utils::FileExists(argv[i]) && Utils::ValidFileType(argv[i])){
                 inputFiles.push_back(argv[i]);
             }
         } 

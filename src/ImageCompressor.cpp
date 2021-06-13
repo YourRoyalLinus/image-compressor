@@ -3,8 +3,6 @@
 #include <bitset>
 
 ImageCompressor::ImageCompressor(){
-    bmpHeader = new Header();
-    bmpInfoHeader = new InfoHeader();
 }
 
 ImageCompressor::~ImageCompressor(){
@@ -36,12 +34,6 @@ void ImageCompressor::CompressImageFile(FileConverter::FileInfo *fileInfo){
     Reads the bmp image into a 2D array
 */
 void ImageCompressor::ReadInto2DArray(std::string bmpPath){
-    int data = 0;
-    int offset = 0;
-    int bpp = 0;
-    long bmpsize = 0;
-    int bmpdataoff = 0;
-
     // Reading the BMP File
     file = fopen(bmpPath.c_str(), "rb");
     if (file == nullptr)
@@ -50,87 +42,45 @@ void ImageCompressor::ReadInto2DArray(std::string bmpPath){
         return;
     }
     else 
-    {
-        // Set file position of the 
-        // stream to the beginning
-        // Contains file signature 
-        // or ID "BM"
-        int offset = 0;
-        
-        // Set offset to 2, which 
-        // contains size of BMP File
-        offset = 2;
-        
-        fseek(file, offset, SEEK_SET);
-        
-        // Getting size of BMP File
-        fread(&bmpHeader->fileSize, 4, 1, file);
-
-        fread(&bmpHeader->reserved, 4, 1, file);
-
-        // Get offset to start of bmp data
-        fread(&bmpHeader->dataOffset, 4, 1, file);
-        
-        /*
-        
-        // Getting offset where the
-        // pixel array starts
-        // Since the information 
-        // is at offset 10 from 
-        // the start, as given 
-        // in BMP Header
-        offset = 10; 
-        
-        fseek(file, offset, SEEK_SET); 
-        
-        // Bitmap data offset
-        fread(&bmpdataoff, 4, 1, file); 
-        
-        */
-        
-        // Getting height and width of the image
-        // Width is stored at offset 18 and height
-        // at offset 22, each of 4 bytes
-        fseek(file, 18, SEEK_SET);
-        
-        fread(&bmpInfoHeader->width, 4, 1, file);
-        
-        fread(&bmpInfoHeader->height, 4, 1, file);
-        
-        // Number of bits per pixel
-        fseek(file, 2, SEEK_CUR);
-        
-        fread(&bmpInfoHeader->bitsPerPixel, 2, 1, file);
-
-        if(bmpInfoHeader->bitsPerPixel <= 8){
-            std::cout << "Invalid BMP file: Bits per pixel must be greater than 8. File BPP = " << bmpInfoHeader->bitsPerPixel << std::endl;
+    { 
+        // Extract the header data from the BMP File
+        // FileSize will need to be recalculated
+        file = fopen(bmpPath.c_str(), "rb");
+        fread(headerBytes, sizeof(unsigned char), 54, file);
+        // Get BPP
+        short int bpp = *(short int*)&headerBytes[28];
+        //Check if BPP is greater than 8 so I dont have to build a color table :)
+        if(bpp <= 8){
+            std::cout << "Invalid BMP file: Bits per pixel must be greater than 8. File BPP = " << bpp << std::endl;
             exit(-1);
         }
-        
-        fseek(file, 54, SEEK_SET);
-        //GET DATA BETWEEN THIS AND OFFSET
-        
-        // Setting offset to start of pixel data
-        fseek(file, bmpHeader->dataOffset, SEEK_SET);
-         
-        // Creating Image array
-        imageArray = new int*[bmpInfoHeader->height];
-        for (int i = 0; i < bmpInfoHeader->height; i++)
+        // Get Offset from headerData
+        // Set File Stream point to Data OffSet
+        int offset = *(int*)&headerBytes[10];
+        fseek(file, offset, SEEK_SET);
+
+        // Get Weight from headerData
+        int width = *(int*)&headerBytes[18];
+        // Get Height from headerData
+        int height = *(int*)&headerBytes[22];
+
+        //Creating Image array
+        imageArray = new int*[height];
+        for (int i = 0; i < height; i++)
         {
-            imageArray[i] = new int[bmpInfoHeader->width];
+            imageArray[i] = new int[width];
         }
         
         // Reading the BMP File 
         // into Image Array
-        int temp = 0;
-        for (int i = 0; i < bmpInfoHeader->height; i++) 
+        int temp = 0; 
+        int bitDepth = bpp/8;
+        for (int i = 0; i < height; i++) 
         {
-            for (int j = 0; j < bmpInfoHeader->width; j++)
+            for (int j = 0; j <width; j++)
             {
-                fread(&temp, 3, 1, file);
+                fread(&temp, bitDepth, 1, file);
                 
-                // the Image is a 
-                // 24-bit BMP Image
                 temp = temp & 0x0000FF; 
                 imageArray[i][j] = temp;
             }
@@ -147,8 +97,8 @@ int* ImageCompressor::GetHistogram(){
         hist[i] = 0;
     }
 
-    for(unsigned i = 0; i < bmpInfoHeader->height; i++){
-        for(unsigned j = 0; j < bmpInfoHeader->width; j++){
+    for(unsigned i = 0; i < *(int*)&headerBytes[22]; i++){
+        for(unsigned j = 0; j < *(int*)&headerBytes[18]; j++){
             hist[imageArray[i][j]] += 1;
         }
     }
@@ -194,7 +144,7 @@ float ImageCompressor::GetMinimumProb(int* hist){
     float pTemp;
 
     for(unsigned i = 0; i < 256; i++){
-        pTemp = (hist[i] / (float)(bmpInfoHeader->height * bmpInfoHeader->width));
+        pTemp = (hist[i] / (float) ( (*(int*)&headerBytes[22]) * (*(int*)&headerBytes[18]) ));
         if(pTemp > 0 && pTemp <= p){
             p = pTemp;
         }
@@ -217,7 +167,7 @@ void ImageCompressor::InitStructs(int mcl, int nodes, int totalNodes){
     Initialize the two arrays pixFreq and huffCodes with information of the leaf nodes
 */
 void ImageCompressor::InitArrays(int* hist){
-    int totpix = bmpInfoHeader->height* bmpInfoHeader->width;
+    int totpix = (*(int*)&headerBytes[22]) * (*(int*)&headerBytes[18]);
     float tempProb;
     int j = 0;
 
@@ -346,85 +296,74 @@ void ImageCompressor::Backtrack(int nodes, int totalNodes){
     EG: 0, 0, 1, 0, 0, 1, \0 -> 001001
 */
 void ImageCompressor::ConcatCodes(char* str, char* parentCode, char add){
-    unsigned i = 0;
-    while(*(parentCode+i) != '\0'){
-        *(str+i) = *(parentCode + i);
+    int i = 0;
+    while (*(parentCode + i) != '\0') 
+    {
+        *(str + i) = *(parentCode + i);
         i++;
     }
-    str[i] = add;
-    str[i+1] = '\0';
+    if (add != '2') 
+    {
+        str[i] = add;
+        str[i + 1] = '\0';
+    }
+    else
+        str[i] = '\0';
 }
 
 /*
-    Encodes the huffman tree into an image file into a temporary text file. Saves the tmpFile to fileInfo
+    Encodes the huffman tree into an image file into a temporary binary file. Included header information for the file to be parsed later
 */
 void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes){
     //Encoding the image
     int pixVal;
-    std::string pixelData;
-    
-    // Encode Pixel Data
-    for(unsigned r = 0; r < bmpInfoHeader->height; r++){
-        for(unsigned c = 0; c < bmpInfoHeader->width; c++){
+    int pixelDataSize = 0;
+
+    int height = *(int*)&headerBytes[22];
+    int width = *(int*)&headerBytes[18];
+
+    headerBytes[30] =  std::bitset<32>(3).to_ulong(); //BI_BITFIELDS
+    headerBytes[10] = std::bitset<32>(54).to_ulong();
+
+    fileInfo->encodedPath = fileInfo->relativeFilePath + fileInfo->fileName + "_encoded.bin";
+    FILE* huffmanImage = fopen(fileInfo->encodedPath.c_str(), "wb");
+    if (huffmanImage == nullptr)
+    {
+        std::cout << "Error opening file" << fileInfo->encodedPath << std::endl;
+        return;
+    }
+  
+
+    //image data is read from bottom left -> top right
+    for(int r = height-1; r >= 0; r--){
+        for(int c = 0; c < width; c++){
             pixVal = imageArray[r][c];
             for(unsigned i = 0; i < nodes; i++){
                 if(pixVal == pixFreq[i].pix){
-                    pixelData += pixFreq[i].code;
+                    fprintf(huffmanImage, "%s", pixFreq[i].code);
+                    pixelDataSize += strlen(pixFreq[i].code);
                 }
             }
         }
     }
-    bmpHeader->dataOffset = 54;
-    bmpHeader->fileSize =  bmpHeader->dataOffset + (pixelData.size() / 4);
 
-    std::vector<std::string> headerVect(16);
-    //Encode the File Header
-    std::string sSignature = bmpHeader->signature;
-    std::string sFileSize = std::bitset<32>(bmpHeader->fileSize).to_string();
-    std::string sReservedHeader= std::bitset<32>(bmpHeader->reserved).to_string();
-    std::string sDataOffset = std::bitset<32>(bmpHeader->dataOffset).to_string(); //Using old file info??
+    //8 bits per 1 Byte
+    //Char size is 1 Byte -> Each 0 or 1 in the huffman tree costs 1 Byte to represent, but when decoded, will represent 1 bit
+    //Dividing by 8 gives us the number of Bytes the compressed huffman image represents
+    int tmp = std::bitset<32>(54 + (pixelDataSize /8)).to_ulong();
 
-    headerVect.push_back(sSignature);
-    headerVect.push_back(sFileSize);
-    headerVect.push_back(sReservedHeader);
-    headerVect.push_back(sDataOffset);
-
-    //Encode the InfoHeader
-    std::string sSize = std::bitset<32>(bmpInfoHeader->headerSize).to_string();
-    std::string sWidth = std::bitset<32>(bmpInfoHeader->width).to_string();
-    std::string sHeight = std::bitset<32>(bmpInfoHeader->height).to_string();
-    std::string sPlanes = std::bitset<8>(bmpInfoHeader->planes).to_string();
-    std::string sBPP = std::bitset<8>(bmpInfoHeader->bitsPerPixel).to_string();
-    std::string sCompression = std::bitset<32>(bmpInfoHeader->compression).to_string();
-    std::string sImgSize = std::bitset<32>(bmpInfoHeader->imageSize).to_string();
-    std::string sXPixels = std::bitset<32>(bmpInfoHeader->xPixelsPerM).to_string();
-    std::string sYPixels = std::bitset<32>(bmpInfoHeader->yPixelsPerM).to_string();
-    std::string sColorsUsed = std::bitset<32>(bmpInfoHeader->colorsUsed).to_string();
-    std::string sImportantColors = std::bitset<32>(bmpInfoHeader->importantColors).to_string();
-
-    headerVect.push_back(sSize);
-    headerVect.push_back(sWidth);
-    headerVect.push_back(sHeight);
-    headerVect.push_back(sPlanes);
-    headerVect.push_back(sBPP);
-    headerVect.push_back(sCompression);
-    headerVect.push_back(sImgSize);
-    headerVect.push_back(sXPixels);
-    headerVect.push_back(sYPixels);
-    headerVect.push_back(sColorsUsed);
-    headerVect.push_back(sImportantColors);
-
-    headerVect.push_back(pixelData);
-
-    fileInfo->tmpPath = fileInfo->relativeFilePath + fileInfo->fileName + ".txt";
+    headerBytes[5] =  (tmp >> 24) & 0xFF;
+    headerBytes[4] =  (tmp >> 16) & 0xFF;
+    headerBytes[3] = (tmp >> 8) & 0xFF;
+    headerBytes[2] = tmp & 0xFF;
     
-    FILE* huffmanImage = fopen(fileInfo->tmpPath.c_str(), "wb");
+    fseek(huffmanImage, 0, SEEK_SET);
 
     // Write file header and info header into txt file
-    for(unsigned i = 0; i < headerVect.size(); i++){
-        fprintf(huffmanImage, "%s", headerVect[i].c_str());
+    for(unsigned i = 0; i < 54; i++){
+        fputc(headerBytes[i], huffmanImage);
     }
-    
+   
     fclose(huffmanImage);
 
 }

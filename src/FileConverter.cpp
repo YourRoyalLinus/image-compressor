@@ -3,7 +3,8 @@
 #include <bitset>
 #include <vector>
 
-FileConverter::FileConverter(){   
+FileConverter::FileConverter(){
+    cimg_library::cimg::imagemagick_path(imageMagickPath.c_str());
 }
 
 FileConverter::~FileConverter(){
@@ -17,81 +18,45 @@ void FileConverter::ConvertFileToBMP(FileInfo* fi){
             break;
         default:
             std::string tmp = fi->relativeFilePath + fi->fileName +".bmp"; 
+            image.save(tmp.c_str());
             fi->bmpPath = tmp;
             break;
     }
 }
-void FileConverter::ConvertFileToOriginal(FileInfo* fi){
-    std::string tmp;
-    
+
+long FileConverter::SaveEncodedDataFile(FileInfo* fi){
     int height = 0;
     int width = 0;
     long offset = 0;
-    long fileSize = 0;
-    char buffer[32];
+    int fileSize = 0;
+    short int bpp = 0;
+    unsigned char header[54];
 
-    FILE* imgFile = fopen(fi->tmpPath.c_str(), "rb");
+    FILE* imgFile = fopen(fi->encodedPath.c_str(), "rb");
 
     if (imgFile == nullptr)
     {
-        std::cout << "Error opening tmp file" << fi->tmpPath << std::endl;
-        return;
+        std::cout << "Error opening tmp file" << fi->encodedPath << std::endl;
+        return -1;
     }
 
-    fseek(imgFile, 16, SEEK_SET);
-    fread(&buffer, 1, 32, imgFile);
-    fileSize = std::bitset<32>(buffer).to_ulong();
-
-    fseek(imgFile, 80, SEEK_SET);
-    fread(&buffer, 1, 32, imgFile);
-    offset = std::bitset<32>(buffer).to_ulong();
-
-    fseek(imgFile, 144, SEEK_SET);
-    fread(&buffer, 1, 32, imgFile);
-    width = std::bitset<32>(buffer).to_ulong();
-    fread(&buffer, 1, 32, imgFile);
-    height = std::bitset<32>(buffer).to_ulong();
+    // Reader header data into the header array
+    fread(header, sizeof(unsigned char), 54, imgFile);
     
-    fseek (imgFile , offset, SEEK_END);
-    int imgSize = ftell (imgFile);
-    rewind (imgFile);
+    fileSize = *(int*)&header[2];
+    offset = *(int*)&header[10];
+    width = *(int*)&header[18];
+    height = *(int*)&header[22];
+    bpp = *(int*)&header[28];
 
-    char* buff = new char[imgSize+1];
-    fread (buff,1,imgSize,imgFile);
-    buff[imgSize] = '\0';
-    
-    /*
-    char* imgBuffer = new char[(fileSize-offset+1)];
-
+    // Move stream pointer to the start of the data 
     fseek(imgFile, offset, SEEK_SET);
-    fread(&imgBuffer, (fileSize-offset), 1, imgFile);
+    int pixelDataSize = fileSize - offset;
+    unsigned char* pixelArray = new unsigned char[pixelDataSize+1];
+    fread(pixelArray, sizeof(unsigned char), pixelDataSize, imgFile);
+    pixelArray[pixelDataSize] = '\0';
 
-    imgBuffer[fileSize] = '\0';
-    */
-    cimg_library::CImg<unsigned char> image(buff, width, height, 1, 3);
-
-    //cimg_library::CImg<unsigned char> image;
-    //image.load_bmp(fi->tmpPath.c_str());
-    switch(fi->converted){
-        case true:
-            tmp = fi->relativeFilePath + fi->fileName + fi->ext; 
-            switch(fi->type){
-                case FileType::JPEG:
-                    image.save_jpeg(tmp.c_str());
-                    break;
-                case FileType::PNG:
-                    image.save_png(tmp.c_str());
-                    break;
-                case FileType::TIFF:
-                    image.save_tiff(tmp.c_str());
-                    break;
-            }
-            fi->fullFilePath = tmp;
-            break;
-        case false:
-            image.save_bmp(fi->fullFilePath.c_str());
-            break;
-    }  
+    return fileSize;
 }
 
 struct FileConverter::FileInfo* FileConverter::ParseFile(const std::string& file){
@@ -124,6 +89,7 @@ struct FileConverter::FileInfo* FileConverter::ParseFile(const std::string& file
     }
 
     fi->compressedSize = -1;
+    fi->encodedSize = -1;
 
     return fi;
 }
