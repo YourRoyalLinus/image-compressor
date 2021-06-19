@@ -33,5 +33,5 @@
 
 *.vscode
 /images*
-/lib/ImageMagick*
-CMakeLists.txt
+/lib/*
+/build/*
