@@ -72,8 +72,10 @@ int ImageCompressionEngine::StartBatchCompression(){
                 exit(-1);
             }            
 
-            CleanupFiles(fileInfo);
+            imageCompressor->DecompressImageFile(fileInfo);
 
+            //CleanupFiles(fileInfo);
+    
             executeEnd = std::chrono::system_clock::now();
             DisplayResults();
             

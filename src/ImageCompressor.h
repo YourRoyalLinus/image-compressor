@@ -2,6 +2,13 @@
 #define IMAGECOMPRESSOR_H
 
 #include "FileConverter.h"
+#include "CImg/CImg-2.9.8_pre051821/CImg.h"
+#include "cereal/archives/binary.hpp"
+#include "cereal/types/string.hpp"
+#include "cereal/types/unordered_map.hpp"
+#include "cereal/types/vector.hpp"
+#include <unordered_map>
+#include <sstream>
 
 class ImageCompressor{
     public:
@@ -23,10 +30,30 @@ class ImageCompressor{
             int arrloc;
             float freq;
         };
+        struct HuffTable{
+            std::unordered_map<std::string, int> table;
+            template<class Archive>
+            void serialize(Archive & archive)
+            {
+                archive( CEREAL_NVP(table) ); // serialize things by passing them to the archive
+            }
+        };
+
+        struct PixelData{
+            std::vector<unsigned short int> codeLengths;
+            std::vector<std::string> codes;
+            template<class Archive>
+            void serialize(Archive & archive)
+            {
+                archive( CEREAL_NVP(codeLengths), CEREAL_NVP(codes)); // serialize things by passing them to the archive
+            }
+        };
+        
         ImageCompressor();
         ~ImageCompressor();
 
         void CompressImageFile(FileConverter::FileInfo *fileInfo);
+        void DecompressImageFile(FileConverter::FileInfo* fileInfo);
     private:
         void ReadInto2DArray(std::string bmpPath);
         int* GetHistogram();
@@ -41,14 +68,27 @@ class ImageCompressor{
         void Backtrack( int nodes, int totalNodes);
         void ConcatCodes(char* str, char* parentCode, char add);
         void EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes);
+        int EncodeBits(char* bits);
+        void TestEncoding(std::string s);
+        void TestDecoding(unsigned char* pixelArr, int height, int width);
+        unsigned short int GetCodeLength(FILE* encodedFile);
 
-        int** imageArray;
+        void CreateHuffTable(int nodes);
+        int SerializeHuffTable(std::string encodedFilePath, int offset);
+        void DeserializeHuffTable(std::string encodedFilePath, int offset);
+        int SerializePixelData(std::string encodedFilePath, int offset);
+        void DeserializePixelData(std::string encodedFilePath, int offset);
+        char* DecodeBits(FILE* encodedFile, int significantBits);
+        
+        cimg_library::CImg<unsigned char> cimage;
+        unsigned char* pixelDataArray;
+
         unsigned char headerBytes[54];
-    
         struct PixFreq* pixFreq;
         struct HuffCode* huffCode;
+        struct HuffTable* huffTable;
+        struct PixelData* pixelData;
 
-        FILE* file;
-    
+        FILE* file;   
 };
 #endif

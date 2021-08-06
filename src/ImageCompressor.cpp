@@ -1,6 +1,7 @@
 #include "ImageCompressor.h"
 #include "Utils.h"
 #include <bitset>
+#include <cassert>
 
 ImageCompressor::ImageCompressor(){
 }
@@ -34,58 +35,36 @@ void ImageCompressor::CompressImageFile(FileConverter::FileInfo *fileInfo){
     Reads the bmp image into a 2D array
 */
 void ImageCompressor::ReadInto2DArray(std::string bmpPath){
-    // Reading the BMP File
+    cimg_library::CImg<unsigned char> img(bmpPath.c_str());
+    cimage = img;
+
+    unsigned char* pixData = cimage.data();
+
+    // Extract the header data from the BMP File
+    // FileSize will need to be recalculated
     file = fopen(bmpPath.c_str(), "rb");
-    if (file == nullptr)
-    {
-        std::cout << "Error opening file" << bmpPath << std::endl;
+    if(file == nullptr){
+        std::cout << "Error opening " << bmpPath << std::endl;
         return;
     }
-    else 
-    { 
-        // Extract the header data from the BMP File
-        // FileSize will need to be recalculated
-        file = fopen(bmpPath.c_str(), "rb");
-        fread(headerBytes, sizeof(unsigned char), 54, file);
-        // Get BPP
-        short int bpp = *(short int*)&headerBytes[28];
-        //Check if BPP is greater than 8 so I dont have to build a color table :)
-        if(bpp <= 8){
-            std::cout << "Invalid BMP file: Bits per pixel must be greater than 8. File BPP = " << bpp << std::endl;
-            exit(-1);
-        }
-        // Get Offset from headerData
-        // Set File Stream point to Data OffSet
-        int offset = *(int*)&headerBytes[10];
-        fseek(file, offset, SEEK_SET);
 
-        // Get Weight from headerData
-        int width = *(int*)&headerBytes[18];
-        // Get Height from headerData
-        int height = *(int*)&headerBytes[22];
-
-        //Creating Image array
-        imageArray = new int*[height];
-        for (int i = 0; i < height; i++)
-        {
-            imageArray[i] = new int[width];
-        }
-        
-        // Reading the BMP File 
-        // into Image Array
-        int temp = 0; 
-        int bitDepth = bpp/8;
-        for (int i = 0; i < height; i++) 
-        {
-            for (int j = 0; j <width; j++)
-            {
-                fread(&temp, bitDepth, 1, file);
-                
-                temp = temp & 0x0000FF; 
-                imageArray[i][j] = temp;
-            }
-        }
+    fread(headerBytes, sizeof(unsigned char), 54, file);
+    // Get BPP
+    short int bpp = *(short int*)&headerBytes[28];
+    //Check if BPP is greater than 8 so I dont have to build a color table :)
+    if(bpp <= 8){
+        std::cout << "Invalid BMP file: Bits per pixel must be greater than 8. File BPP = " << bpp << std::endl;
+        exit(-1);
     }
+    
+    // Get Weight from headerData
+    int width = *(int*)&headerBytes[18];
+    // Get Height from headerData
+    int height = *(int*)&headerBytes[22];
+
+    pixelDataArray = cimage.data();
+
+    TestEncoding(bmpPath);
 }
 
 /*
@@ -97,12 +76,11 @@ int* ImageCompressor::GetHistogram(){
         hist[i] = 0;
     }
 
-    for(unsigned i = 0; i < *(int*)&headerBytes[22]; i++){
-        for(unsigned j = 0; j < *(int*)&headerBytes[18]; j++){
-            hist[imageArray[i][j]] += 1;
-        }
+    for(unsigned i = 0; i < cimage.size(); i++){
+        int pixIntensityValue = *(pixelDataArray+i);
+        hist[pixIntensityValue] += 1;
     }
-    
+
     return hist;
 }
 
@@ -113,7 +91,6 @@ int ImageCompressor::GetNonZeroOccurances(int* hist){
             nodes++;
         }
     }
-
     return nodes;
 }
 
@@ -161,6 +138,8 @@ void ImageCompressor::InitStructs(int mcl, int nodes, int totalNodes){
     for(unsigned i = 0; i < totalNodes; i++){
         pixFreq[i] = PixFreq(mcl);
     }
+    huffTable = new HuffTable();
+    pixelData = new PixelData();
 }
 
 /*
@@ -311,6 +290,11 @@ void ImageCompressor::ConcatCodes(char* str, char* parentCode, char add){
         str[i] = '\0';
 }
 
+int ImageCompressor::EncodeBits(char* bits){
+    int byte = std::bitset<32>(bits).to_ulong();
+    return byte;
+}
+
 /*
     Encodes the huffman tree into an image file into a temporary binary file. Included header information for the file to be parsed later
 */
@@ -318,12 +302,7 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
     //Encoding the image
     int pixVal;
     int pixelDataSize = 0;
-
-    int height = *(int*)&headerBytes[22];
-    int width = *(int*)&headerBytes[18];
-
-    headerBytes[30] =  std::bitset<32>(3).to_ulong(); //BI_BITFIELDS
-    headerBytes[10] = std::bitset<32>(54).to_ulong();
+    int pixelDataArraySize = 0;
 
     fileInfo->encodedPath = fileInfo->relativeFilePath + fileInfo->fileName + "_encoded.bin";
     FILE* huffmanImage = fopen(fileInfo->encodedPath.c_str(), "wb");
@@ -332,38 +311,248 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
         std::cout << "Error opening file" << fileInfo->encodedPath << std::endl;
         return;
     }
-  
 
-    //image data is read from bottom left -> top right
-    for(int r = height-1; r >= 0; r--){
-        for(int c = 0; c < width; c++){
-            pixVal = imageArray[r][c];
-            for(unsigned i = 0; i < nodes; i++){
-                if(pixVal == pixFreq[i].pix){
-                    fprintf(huffmanImage, "%s", pixFreq[i].code);
-                    pixelDataSize += strlen(pixFreq[i].code);
-                }
+    //std::stringstream pixelDataArrayStringStream;
+    for(unsigned i = 0; i < cimage.size(); i++){
+        pixVal = *(pixelDataArray+i);
+        for(unsigned k = 0; k < nodes; k++){
+            if(pixVal == pixFreq[k].pix){
+                unsigned short int codeSize = strlen(pixFreq[k].code);
+                pixelData->codeLengths.push_back(codeSize);
+                pixelData->codes.push_back(pixFreq[k].code);
+                /*
+                int code = EncodeBits(pixFreq[k].code);
+                pixelDataSize += 6;
+                pixelDataArraySize += codeSize;
+                pixelDataArrayStringStream.write(std::to_string(codeSize).c_str(), 1); //TEST
+                pixelDataArrayStringStream.write(std::to_string(code).c_str(), 1); //TEST
+                */
+                //fprintf(huffmanImage, "%d", codeSize);
+                //fprintf(huffmanImage, "%d", code);
             }
         }
     }
 
-    //8 bits per 1 Byte
-    //Char size is 1 Byte -> Each 0 or 1 in the huffman tree costs 1 Byte to represent, but when decoded, will represent 1 bit
-    //Dividing by 8 gives us the number of Bytes the compressed huffman image represents
-    int tmp = std::bitset<32>(54 + (pixelDataSize /8)).to_ulong();
+    CreateHuffTable(nodes);
+    int height = *(int*)&headerBytes[22];
+    int width = *(int*)&headerBytes[18];
 
-    headerBytes[5] =  (tmp >> 24) & 0xFF;
-    headerBytes[4] =  (tmp >> 16) & 0xFF;
-    headerBytes[3] = (tmp >> 8) & 0xFF;
-    headerBytes[2] = tmp & 0xFF;
+    int headerSize = 58;
+    int dhtSerializedSize = SerializeHuffTable(fileInfo->encodedPath, 58);
+    int pixelDataOffset = headerSize+dhtSerializedSize;
+    
+    int pixelDataSerlizedSize = 0;//SerializePixelData(fileInfo->encodedPath, pixelDataOffset);
+
+    int encodedFileSize = std::bitset<32>(headerSize + dhtSerializedSize + pixelDataSerlizedSize).to_ulong();
+
+    headerBytes[30] =  std::bitset<32>(3).to_ulong(); //BI_BITFIELDS
+    
+    headerBytes[13] = (pixelDataOffset >> 24) & 0xFF;
+    headerBytes[12] = (pixelDataOffset >> 16) & 0xFF;
+    headerBytes[11] = (pixelDataOffset >> 8) & 0xFF;
+    headerBytes[10] = pixelDataOffset & 0xFF;
+
+    headerBytes[5] =  (encodedFileSize >> 24) & 0xFF;
+    headerBytes[4] =  (encodedFileSize >> 16) & 0xFF;
+    headerBytes[3] = (encodedFileSize >> 8) & 0xFF;
+    headerBytes[2] = encodedFileSize & 0xFF;
+
+    unsigned char fileMetaData[4]; //????
+    fileMetaData[3] =  (pixelDataArraySize >> 24) & 0xFF;
+    fileMetaData[2] =  (pixelDataArraySize >> 16) & 0xFF;
+    fileMetaData[1] = (pixelDataArraySize >> 8) & 0xFF;
+    fileMetaData[0] = pixelDataArraySize & 0xFF;
+
     
     fseek(huffmanImage, 0, SEEK_SET);
-
+    
     // Write file header and info header into txt file
     for(unsigned i = 0; i < 54; i++){
         fputc(headerBytes[i], huffmanImage);
     }
-   
+    for(unsigned i = 0; i < 4; i++){
+        fputc(fileMetaData[i], huffmanImage);
+    }
+    
     fclose(huffmanImage);
+    
+}
 
+void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
+    int height = 0;
+    int width = 0;
+    long offset = 0;
+    int fileSize = 0;
+    int dataArraySize = 0;
+    unsigned char header[58];
+
+    FILE* encodedFile = fopen(fileInfo->encodedPath.c_str(), "rb");
+    if (encodedFile == nullptr)
+    {
+        std::cout << "Error opening encoded file" << fileInfo->encodedPath << std::endl;
+        return;
+    }
+
+    // Reader header data into the header array
+    fread(header, sizeof(unsigned char), 58, encodedFile);
+    fileSize = *(int*)&header[2];
+    offset = *(int*)&header[10];
+    width = *(int*)&header[18];
+    height = *(int*)&header[22];
+    dataArraySize = *(int*)&header[54];
+    int dhtBitStreamSize = offset-58; 
+
+    std::cout << "FILESIZE=" << fileSize << std::endl;
+    std::cout << "OFFSET=" << offset << std::endl;
+    std::cout << "WIDTH=" << width << std::endl;
+    std::cout << "HEIGHT=" << height << std::endl;
+    std::cout << "DHT DECODED SIZE = " << dhtBitStreamSize << std::endl; 
+    std::cout << "DATA ARRAY SIZE = " << dataArraySize << std::endl;
+
+    // Move stream pointer to the start of the data 
+    //NEED TO STORE SIZE OF INFO AFTER HEADER DATA???
+    //fseek(encodedFile, 58, SEEK_SET);
+    
+    //Read in DHT
+    DeserializeHuffTable(fileInfo->encodedPath, 58);
+    exit(0);
+    //Read in DHT tree codes and convert back to pixel values
+    unsigned char* pixelArray = new unsigned char[dataArraySize+1];  
+    int pixArrayPos = 0;
+    int codeLength = GetCodeLength(encodedFile);
+    char* code = DecodeBits(encodedFile, codeLength);
+    while(code != nullptr){
+        for(unsigned i = 0; i < codeLength; i++){
+            std::cout << "ENCODED CODE = " << code << "AT POS " << pixArrayPos << " = " << huffTable->table[code] << std::endl;
+            pixelArray[pixArrayPos] = huffTable->table[code];
+            pixArrayPos++;
+        }
+        codeLength = GetCodeLength(encodedFile);
+        code = DecodeBits(encodedFile, codeLength);
+    }
+
+    pixelArray[dataArraySize] = '\0';
+
+    TestDecoding(pixelArray, height, width);
+
+    return;
+}
+
+char* ImageCompressor::DecodeBits(FILE* encodedFile, int significantBits){
+    char* encodedBits;
+    char* decodedBits;
+    const char* bitStream;
+    std::string bitSeq = 0;
+    int streamReaderRes = 0;
+    
+    streamReaderRes = fread(encodedBits, sizeof(int), 1, encodedFile);
+    if(streamReaderRes == 0){
+        return nullptr;
+    }
+    
+    bitSeq = std::bitset<32>(encodedBits).to_string();
+    bitStream = bitSeq.substr(sizeof(int) - significantBits).c_str();
+
+    decodedBits = new char[significantBits];
+    for(unsigned i = 0; i < significantBits; i++){
+        decodedBits[i] = bitStream[i];
+    }
+
+    std::cout << "CODE = " << std::string(decodedBits) << std::endl;
+    return decodedBits;
+}
+
+unsigned short int ImageCompressor::GetCodeLength(FILE* encodedFile){
+    unsigned short int* size = 0;
+    fread(size, sizeof(unsigned short int), 1, encodedFile);
+    std::cout << "CODE LENGTH = " << *size << std::endl;
+    return *size;
+}
+
+void ImageCompressor::CreateHuffTable(int nodes){
+    std::unordered_map<std::string, int> temp;
+    for(unsigned pixelValue = 0; pixelValue < 256; pixelValue++){
+        for(unsigned k = 0; k < nodes; k++){
+            if(pixelValue == pixFreq[k].pix){
+                assert(pixFreq[k].code != nullptr);
+                //std::cout << "KEY CODE = " << pixFreq[k].code << " REPRESENTS PIXELVALUE = " << pixelValue << std::endl;
+                std::string c = pixFreq[k].code;
+                temp[c] = pixelValue;
+                break;
+            }
+        }
+    }
+
+    huffTable->table = temp;
+}
+
+int ImageCompressor::SerializeHuffTable(std::string encodedFilePath, int offset){
+    std::ofstream serializedOutputFile = std::ofstream(encodedFilePath, std::ofstream::binary);
+    serializedOutputFile.seekp(offset);
+    std::cout << "STARTPOS = " << serializedOutputFile.tellp() << std::endl;
+    struct HuffTable tmpHuffTable = *huffTable;
+    {
+        cereal::BinaryOutputArchive binaryOutputArchive(serializedOutputFile);
+        binaryOutputArchive(tmpHuffTable);
+    }
+    int end = serializedOutputFile.tellp();
+
+    return end - offset; //Header Byte size
+}
+
+void ImageCompressor::DeserializeHuffTable(std::string encodedFilePath, int offset){
+    struct HuffTable tmpHuffTable;
+    std::ifstream serializedInputFile = std::ifstream(encodedFilePath, std::ifstream::binary);
+    serializedInputFile.seekg(offset);
+    //std::copy_n(std::ostreambuf_iterator<char>(serializedOutputFile), 5350, std::ostreambuf_iterator<char>(dst));
+    //serializedInputStream = std::istringstream(bitStream, std::ios::binary);
+    {
+        cereal::BinaryInputArchive binaryInputArchive(serializedInputFile);
+        binaryInputArchive(tmpHuffTable);
+    }
+    std::cout << "TESTING TABLE = " << tmpHuffTable.table["11100011"] << " = 255 ?" << std::endl;
+    huffTable = &tmpHuffTable;
+
+}
+
+int ImageCompressor::SerializePixelData(std::string encodedFilePath, int offset){
+    std::ofstream serializedOutputFile = std::ofstream(encodedFilePath, std::ofstream::binary | std::ofstream::app);
+    serializedOutputFile.seekp(offset);
+
+    struct PixelData tmpPixelData = *pixelData;
+    {
+        cereal::BinaryOutputArchive binaryOutputArchive(serializedOutputFile);
+        binaryOutputArchive(tmpPixelData);
+    }
+    int end = serializedOutputFile.tellp();
+
+    std::cout << " START =" << offset << " END=" << end << " SIZE = " << end - offset << std::endl;
+    return end - offset; //Header Byte size
+}
+
+void ImageCompressor::DeserializePixelData(std::string encodedFilePath, int offset){
+    struct PixelData tmpPixelData;
+    std::ifstream serializedInputFile = std::ifstream(encodedFilePath, std::ifstream::binary);
+    serializedInputFile.seekg(offset);
+    //std::copy_n(std::ostreambuf_iterator<char>(serializedOutputFile), 5350, std::ostreambuf_iterator<char>(dst));
+    //serializedInputStream = std::istringstream(bitStream, std::ios::binary);
+    {
+        cereal::BinaryInputArchive binaryInputArchive(serializedInputFile);
+        binaryInputArchive(tmpPixelData);
+    }
+    
+    pixelData = &tmpPixelData;
+
+}
+
+void ImageCompressor::TestEncoding(std::string s){
+    cimg_library::CImg<unsigned char> image(s.c_str());
+    unsigned char* pixData = image.data();
+    cimg_library::CImg<unsigned char> newImage(pixData, image.width(), image.height(), 1, 3);
+    newImage.save_bmp("/home/jon/ImageCompressor/test.bmp");
+}
+
+void ImageCompressor::TestDecoding(unsigned char* pixelArr, int height, int width){
+    cimg_library::CImg<unsigned char> newImage(pixelArr, height, width, 1, 3);
+    newImage.save_bmp("/home/jon/ImageCompressor/test_decoding.bmp");
 }
