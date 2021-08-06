@@ -7,6 +7,7 @@
 #include "cereal/types/string.hpp"
 #include "cereal/types/unordered_map.hpp"
 #include "cereal/types/vector.hpp"
+#include "cereal/types/memory.hpp"
 #include <unordered_map>
 #include <sstream>
 
@@ -75,7 +76,7 @@ class ImageCompressor{
 
         void CreateHuffTable(int nodes);
         int SerializeHuffTable(std::string encodedFilePath, int offset);
-        void DeserializeHuffTable(std::string encodedFilePath, int offset);
+        void DeserializeHuffTable(std::string encodedFilePath, int offset, int end);
         int SerializePixelData(std::string encodedFilePath, int offset);
         void DeserializePixelData(std::string encodedFilePath, int offset);
         char* DecodeBits(FILE* encodedFile, int significantBits);
