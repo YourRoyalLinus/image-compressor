@@ -139,7 +139,6 @@ void ImageCompressor::InitStructs(int mcl, int nodes, int totalNodes){
         pixFreq[i] = PixFreq(mcl);
     }
     huffTable = new HuffTable();
-    pixelData = new PixelData();
 }
 
 /*
@@ -311,15 +310,14 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
         std::cout << "Error opening file" << fileInfo->encodedPath << std::endl;
         return;
     }
-
     //std::stringstream pixelDataArrayStringStream;
     for(unsigned i = 0; i < cimage.size(); i++){
         pixVal = *(pixelDataArray+i);
         for(unsigned k = 0; k < nodes; k++){
             if(pixVal == pixFreq[k].pix){
                 unsigned short int codeSize = strlen(pixFreq[k].code);
-                pixelData->codeLengths.push_back(codeSize);
-                pixelData->codes.push_back(pixFreq[k].code);
+                huffTable->codeLengths.push_back(codeSize);
+                huffTable->codes.push_back(pixFreq[k].code);
                 /*
                 int code = EncodeBits(pixFreq[k].code);
                 pixelDataSize += 6;
@@ -340,10 +338,8 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
     int headerSize = 58;
     int dhtSerializedSize = SerializeHuffTable(fileInfo->encodedPath, 58);
     int pixelDataOffset = headerSize+dhtSerializedSize;
-    
-    int pixelDataSerlizedSize = SerializePixelData(fileInfo->encodedPath, pixelDataOffset);
 
-    int encodedFileSize = std::bitset<32>(headerSize + dhtSerializedSize + pixelDataSerlizedSize).to_ulong();
+    int encodedFileSize = std::bitset<32>(headerSize + dhtSerializedSize).to_ulong();
 
     headerBytes[30] =  std::bitset<32>(3).to_ulong(); //BI_BITFIELDS
     
@@ -358,10 +354,10 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
     headerBytes[2] = encodedFileSize & 0xFF;
 
     unsigned char fileMetaData[4]; //????
-    fileMetaData[3] =  (pixelDataSerlizedSize >> 24) & 0xFF;
-    fileMetaData[2] =  (pixelDataSerlizedSize >> 16) & 0xFF;
-    fileMetaData[1] = (pixelDataSerlizedSize >> 8) & 0xFF;
-    fileMetaData[0] = pixelDataSerlizedSize & 0xFF;
+    fileMetaData[3] =  (pixelDataOffset >> 24) & 0xFF;
+    fileMetaData[2] =  (pixelDataOffset >> 16) & 0xFF;
+    fileMetaData[1] = (pixelDataOffset >> 8) & 0xFF;
+    fileMetaData[0] = pixelDataOffset & 0xFF;
 
     
     fseek(huffmanImage, 0, SEEK_SET);
@@ -415,9 +411,18 @@ void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
     
     //Read in DHT
     DeserializeHuffTable(fileInfo->encodedPath, 58, offset);
-    DeserializePixelData(fileInfo->encodedPath, offset);
-    exit(0);
     //Read in DHT tree codes and convert back to pixel values
+    unsigned char* pixArr = new unsigned char[newHuffTable.codes.size()];
+    std::vector<unsigned char> pixelArray(newHuffTable.codes.size());
+    for(unsigned i = 0; i < newHuffTable.codes.size(); i++){
+        std::string encodedPixelCode = newHuffTable.codes[i];
+        int decodedPixelValue = newHuffTable.table[encodedPixelCode];
+        pixArr[i] = decodedPixelValue & 0xFF;
+        //std::string decodedPixelValuesBits = std::bitset<sizeof(unsigned char)>(decodedPixelValue).to_string();
+        std::cout << "ENCODED CODE = " << encodedPixelCode << " AT POS =" << i << " = " << decodedPixelValue << " STORED AS =" << (decodedPixelValue & 0xFF) << std::endl;
+    }
+
+    /*
     unsigned char* pixelArray = new unsigned char[dataArraySize+1];  
     int pixArrayPos = 0;
     int codeLength = GetCodeLength(encodedFile);
@@ -431,10 +436,9 @@ void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
         codeLength = GetCodeLength(encodedFile);
         code = DecodeBits(encodedFile, codeLength);
     }
+    */
 
-    pixelArray[dataArraySize] = '\0';
-
-    TestDecoding(pixelArray, height, width);
+    TestDecoding(pixArr, width, height);
 
     return;
 }
@@ -476,7 +480,7 @@ void ImageCompressor::CreateHuffTable(int nodes){
         for(unsigned k = 0; k < nodes; k++){
             if(pixelValue == pixFreq[k].pix){
                 assert(pixFreq[k].code != nullptr);
-                std::cout << "KEY CODE = " << pixFreq[k].code << " REPRESENTS PIXELVALUE = " << pixelValue << std::endl;
+                //std::cout << "KEY CODE = " << pixFreq[k].code << " REPRESENTS PIXELVALUE = " << pixelValue << std::endl;
                 std::string c = pixFreq[k].code;
                 temp[c] = pixelValue;
                 break;
@@ -503,54 +507,16 @@ int ImageCompressor::SerializeHuffTable(std::string encodedFilePath, int offset)
 void ImageCompressor::DeserializeHuffTable(std::string encodedFilePath, int offset, int end){
     struct HuffTable tmpHuffTable;
     std::ifstream serializedInputFile = std::ifstream(encodedFilePath, std::ifstream::binary);
-    std::stringstream serializedInputStringStream = std::stringstream(std::iostream::binary | std::iostream::in | std::iostream::out);
     serializedInputFile.seekg(offset);
- 
-    char* buffer = new char[end+1];
-    serializedInputFile.read(buffer, end+1);
-    serializedInputStringStream.write(buffer, end+1);
-
     {
-        cereal::BinaryInputArchive binaryInputArchive(serializedInputStringStream);
+        cereal::BinaryInputArchive binaryInputArchive(serializedInputFile);
         binaryInputArchive(tmpHuffTable);
     }
     
-    for(auto kv: tmpHuffTable.table){
-        std::cout << "TESTING TABLE0.0 -> KEY = " << kv.first << " VALUE = " << kv.second << std::endl; 
-    }
-    huffTable = &tmpHuffTable;
+    newHuffTable = tmpHuffTable;
+    std::cout << "TESTING scope =" << huffTable->codes[0] << std::endl;
 
 }
-
-int ImageCompressor::SerializePixelData(std::string encodedFilePath, int offset){
-    std::ofstream serializedOutputFile = std::ofstream(encodedFilePath, std::ofstream::binary);
-    serializedOutputFile.seekp(offset);
-    std::cout << "PIXEL DATA ENCODE OFFSET = " << offset << std::endl;
-    struct PixelData tmpPixelData = *pixelData;
-    {
-        cereal::BinaryOutputArchive binaryOutputArchive(serializedOutputFile);
-        binaryOutputArchive(tmpPixelData);
-    }
-    int end = serializedOutputFile.tellp();
-
-    std::cout << " START =" << offset << " END=" << end << " SIZE = " << end - offset << std::endl;
-    return end - offset; //Header Byte size
-}
-
-void ImageCompressor::DeserializePixelData(std::string encodedFilePath, int offset){
-    struct PixelData tmpPixelData;
-    std::ifstream serializedInputFile = std::ifstream(encodedFilePath, std::ifstream::binary);
-    serializedInputFile.seekg(offset);
-    std::cout << "PIXEL DATA DECODE OFFSET = " << offset<< std::endl;
-    {
-        cereal::BinaryInputArchive binaryInputArchive(serializedInputFile);
-        binaryInputArchive(tmpPixelData);
-    }
-    std::cout << "TESTING pixelData = " << tmpPixelData.codes[1] << " =  ?" << std::endl;
-    pixelData = &tmpPixelData;
-
-}
-
 void ImageCompressor::TestEncoding(std::string s){
     cimg_library::CImg<unsigned char> image(s.c_str());
     unsigned char* pixData = image.data();
@@ -558,7 +524,7 @@ void ImageCompressor::TestEncoding(std::string s){
     newImage.save_bmp("/home/jon/ImageCompressor/test.bmp");
 }
 
-void ImageCompressor::TestDecoding(unsigned char* pixelArr, int height, int width){
-    cimg_library::CImg<unsigned char> newImage(pixelArr, height, width, 1, 3);
+void ImageCompressor::TestDecoding(unsigned char* pixelArr, int width, int height){
+    cimg_library::CImg<unsigned char> newImage(pixelArr, width, height, 1, 3);
     newImage.save_bmp("/home/jon/ImageCompressor/test_decoding.bmp");
 }

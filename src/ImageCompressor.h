@@ -33,21 +33,25 @@ class ImageCompressor{
         };
         struct HuffTable{
             std::unordered_map<std::string, int> table;
-            template<class Archive>
-            void serialize(Archive & archive)
-            {
-                archive( CEREAL_NVP(table) ); // serialize things by passing them to the archive
-            }
-        };
-
-        struct PixelData{
             std::vector<unsigned short int> codeLengths;
             std::vector<std::string> codes;
             template<class Archive>
             void serialize(Archive & archive)
             {
-                archive( CEREAL_NVP(codeLengths), CEREAL_NVP(codes)); // serialize things by passing them to the archive
+                archive( CEREAL_NVP(table), CEREAL_NVP(codeLengths), CEREAL_NVP(codes) ); // serialize things by passing them to the archive
             }
+
+            HuffTable(){
+
+            }
+
+            HuffTable(const HuffTable &ht){
+                table = ht.table;
+                codeLengths = ht.codeLengths;
+                codes = ht.codes;
+            }
+
+
         };
         
         ImageCompressor();
@@ -71,14 +75,12 @@ class ImageCompressor{
         void EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes);
         int EncodeBits(char* bits);
         void TestEncoding(std::string s);
-        void TestDecoding(unsigned char* pixelArr, int height, int width);
+        void TestDecoding(unsigned char * pixelArr, int width, int height);
         unsigned short int GetCodeLength(FILE* encodedFile);
 
         void CreateHuffTable(int nodes);
         int SerializeHuffTable(std::string encodedFilePath, int offset);
         void DeserializeHuffTable(std::string encodedFilePath, int offset, int end);
-        int SerializePixelData(std::string encodedFilePath, int offset);
-        void DeserializePixelData(std::string encodedFilePath, int offset);
         char* DecodeBits(FILE* encodedFile, int significantBits);
         
         cimg_library::CImg<unsigned char> cimage;
@@ -88,8 +90,7 @@ class ImageCompressor{
         struct PixFreq* pixFreq;
         struct HuffCode* huffCode;
         struct HuffTable* huffTable;
-        struct PixelData* pixelData;
-
+        struct HuffTable newHuffTable;
         FILE* file;   
 };
 #endif
