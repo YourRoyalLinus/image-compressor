@@ -1,7 +1,8 @@
 #ifndef IMAGECOMPRESSOR_H
 #define IMAGECOMPRESSOR_H
 
-#include "FileConverter.h"
+#include "../include/FileConverter.h"
+#include "../include/File.h"
 #include "CImg/CImg-2.9.8_pre051821/CImg.h"
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/string.hpp"
@@ -57,8 +58,8 @@ class ImageCompressor{
         ImageCompressor();
         ~ImageCompressor();
 
-        void CompressImageFile(FileConverter::FileInfo *fileInfo);
-        void DecompressImageFile(FileConverter::FileInfo* fileInfo);
+        void CompressImageFile(File& file);
+        void DecompressImageFile(File& file);
     private:
         void ReadInto2DArray(std::string bmpPath);
         int* GetHistogram();
@@ -72,7 +73,7 @@ class ImageCompressor{
         void BuildHuffmanTree(int nodes);
         void Backtrack( int nodes, int totalNodes);
         void ConcatCodes(char* str, char* parentCode, char add);
-        void EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes);
+        void EncodeCompressedImage(File& file, int nodes);
         int EncodeBits(char* bits);
         void TestEncoding(std::string s);
         void TestDecoding(unsigned char * pixelArr, int width, int height);

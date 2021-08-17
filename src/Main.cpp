@@ -1,120 +1,60 @@
-#include "ImageCompressionEngine.h"
-#include "Utils.h"
-#include <getopt.h>
+#include "../include/CommandLineHandler.h"
+#include "../include/ImageCompressionEngine.h"
+#include "../include/FileMarshaller.h"
+#include "../include/Batch.h"
+#include "../include/Utils.h"
+
+#include <assert.h>
 #include <fstream>
 
 int main(int argc, char **argv){
-    std::string batchFilePath;
-    std::vector<std::string> inputFiles;
-    const std::string helpMsg = "This program can compress: BMP, JPEG, PNG, and TiFF files.\n"
-                        "If leave the command line empty, the program will prompt you for a file.\n"
-                        "You can input multiple files in the command line by seperating each file path with a comma (,).\n"
-                        "Flags: \n"
-                        "--file=BATCHFILE \t\t Text file(.txt) of files to be compressed. Seperated by newlines.\n"
-                        "--help \t\t\t\t Print this message and exit.\n";
-    int opt;
+    FileMarshaller* fileMarshaller = new FileMarshaller();
+    CommandLineHandler* cmdHandler = new CommandLineHandler();
 
-    int thisOptionOptInd = optind ? optind : 1;
-    int optionIndex = 0;
-    static struct option longOptions[] = {
-        {"help",    no_argument     , 0,  'h'},
-        {"file",    required_argument, 0, 'f'},
-        {0,         0,                 0,  0 }
-    };
+    //Handles first argument
+    //Current arguments don't support multiple args
+    cmdHandler->ParseArgs(argc, argv); 
+    cmdHandler->ProcessArg();
+    std::vector<std::string> inputFiles = cmdHandler->RetrieveArtifact().files;
 
-    while (1) {
-        std::fstream batchFile;
-        opt = getopt_long_only(argc, argv, "", longOptions, &optionIndex);
-        if(opt == -1) break;
-        switch(opt){
-            case 'h':
-                std::cout << helpMsg;
-                exit(0);
-                break;
-            case 'f':
-                batchFilePath = optarg;
-                batchFile = std::fstream(batchFilePath, std::ios::in);
-                if(!batchFile.is_open()){
-                    std::cout << "Unable to open " << batchFilePath << "\n";
-                    exit(-1);
-                }
-                char line[256];
-                while(batchFile.getline(line, 256)){
-                    inputFiles.push_back(line);
-                }
-                break;
-            default:
-                std::cout << "Invalid command line argument\n";
-                exit(-1);
-                break;
+    for(unsigned i = 0; i < inputFiles.size(); i++){
+        if(fileMarshaller->DoesPathExist(inputFiles[i])){
+            continue;
+        }
+        else{
+            std::cout << inputFiles[i] << " is an invald file" <<  std::endl;
+            auto start = inputFiles.begin()+i;
+            auto end = start+1; 
+            inputFiles.erase(start, end);
         }
     }
 
-    if(argc < 2){
-        //Promt user for image (at least one)
-        std::string input;
-        std::cout << "Enter the path of valid file(s) to be compressed. Seperate multiple files by a comma (,): ";
-        std::getline(std::cin, input);
-        inputFiles = Utils::StringSplit(input, ','); 
-        for(unsigned i = 0; i < inputFiles.size(); i++){
-            // Check if file exists and is one of the valid types
-            if(Utils::FileExists(inputFiles[i]) && Utils::ValidFileType(inputFiles[i])){
-                continue;
-            }
-            else{
-                //Remove the current file from the inputFiles list, as it is not a valid file type or it does not exist
-                std::cout << inputFiles[i] << " is an invald file" <<  std::endl;
-                auto start = inputFiles.begin()+i;
-                auto end = start+1; 
-                inputFiles.erase(start, end);
-            }
-        }
-    }
-    else{
-        //Get all images from cmdargs
-        for(unsigned i = 1; i < argc; i++){
-            //If the file from cmd args is a valid file type, include it
-            if(Utils::FileExists(argv[i]) && Utils::ValidFileType(argv[i])){
-                inputFiles.push_back(argv[i]);
-            }
-        } 
-    }
-
-    std::string usrPath = Utils::FindUserPath();
-    std::string homePath = usrPath +"/ImageCompressor";
-
-    if(!std::experimental::filesystem::exists(homePath)){
-        homePath = Utils::CreateFolder(usrPath, "ImageCompressor");
-    }
-
-    if(inputFiles.size() > 0){
-        //if images, create timestamp parent folder to group images
+    std::string homePath = fileMarshaller->CreateHomePath();
+    if(inputFiles.size() > 0){ //TODO if batch = 1 vs batch > 1?
         std::string timestamp = Utils::GetTimeStamp();
-        std::string timestampPath = homePath + "/" + timestamp;
+        std::string timestampPath = fileMarshaller->CreatePath(homePath, timestamp);
+        assert(fileMarshaller->DoesPathExist(timestampPath));
+
         std::string inboundPath = timestampPath + "/inbound";
-        std::string outboundPath = timestampPath + "/outbound";
-
-        Utils::CreateFolder(homePath, timestamp);
-
-        if(std::experimental::filesystem::exists(timestampPath)){
-            //create inbound and outbound children folders
-            if(!std::experimental::filesystem::exists(inboundPath)){
-                Utils::CreateFolder(timestampPath, "inbound");
-            }
-
-            if(!std::experimental::filesystem::exists(outboundPath)){
-                Utils::CreateFolder(timestampPath, "outbound");
-            }
+        if(!fileMarshaller->DoesPathExist(inboundPath)){
+                fileMarshaller->CreatePath(timestampPath, "inbound");
         }
 
-        ImageCompressionEngine* ice = new ImageCompressionEngine(inboundPath, outboundPath, timestampPath, inputFiles); 
+        std::string outboundPath = timestampPath + "/outbound";
+        if(!fileMarshaller->DoesPathExist(outboundPath)){
+            fileMarshaller->CreatePath(timestampPath, "outbound");
+        }
+
+        Batch* batch = new Batch(inputFiles, inboundPath, outboundPath);
+        ImageCompressionEngine* ice = new ImageCompressionEngine(batch, fileMarshaller); 
         int res = ice->StartBatchCompression();
         if(res != 0){
-            std::cout << "Batch completed succesfully, however " << res << " files were unable to be compiled" << std::endl;
+            std::cout << "Batch completed succesfully, however " << res << " files were unable to be compressed" << std::endl;
             exit(0);
         }
     }
     else{
+        std::cout << "There were no valid files to be compresssed." << std::endl << "Exiting..." << std::endl;
         exit(0);
     }
 }

@@ -1,5 +1,6 @@
-#include "ImageCompressor.h"
-#include "Utils.h"
+#include "../include/ImageCompressor.h"
+#include "../include/Utils.h"
+#include <fstream>
 #include <bitset>
 #include <cassert>
 
@@ -12,8 +13,8 @@ ImageCompressor::~ImageCompressor(){
 /*
     Compress an image file using Huffman encoding
 */
-void ImageCompressor::CompressImageFile(FileConverter::FileInfo *fileInfo){
-    ReadInto2DArray(fileInfo->bmpPath);
+void ImageCompressor::CompressImageFile(File& file){
+    ReadInto2DArray(file.fullPath);
 
     int* hist = GetHistogram();
     int nodes = GetNonZeroOccurances(hist);
@@ -28,7 +29,7 @@ void ImageCompressor::CompressImageFile(FileConverter::FileInfo *fileInfo){
     BuildHuffmanTree(nodes);
     Backtrack(nodes, totalNodes);
 
-    EncodeCompressedImage(fileInfo, nodes);
+    EncodeCompressedImage(file, nodes);
 }
 
 /*
@@ -99,7 +100,7 @@ int ImageCompressor::GetNonZeroOccurances(int* hist){
 */
 int ImageCompressor::GetMaxCodeLength(float p){
     int i = 0;
-    while((1/p) > Utils::Fib(i)){
+    while((1/p) > Utils::FibonacciSeq(i)){
         i++;
     }
 
@@ -297,17 +298,17 @@ int ImageCompressor::EncodeBits(char* bits){
 /*
     Encodes the huffman tree into an image file into a temporary binary file. Included header information for the file to be parsed later
 */
-void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, int nodes){
+void ImageCompressor::EncodeCompressedImage(File& file, int nodes){
     //Encoding the image
     int pixVal;
     int pixelDataSize = 0;
     int pixelDataArraySize = 0;
 
-    fileInfo->encodedPath = fileInfo->relativeFilePath + fileInfo->fileName + "_encoded.bin";
-    FILE* huffmanImage = fopen(fileInfo->encodedPath.c_str(), "wb");
+    file.fullPath = file.relativePath + "/" + file.name + "_encoded.bin"; //.JCF
+    FILE* huffmanImage = fopen(file.fullPath.c_str(), "wb");
     if (huffmanImage == nullptr)
     {
-        std::cout << "Error opening file" << fileInfo->encodedPath << std::endl;
+        std::cout << "Error opening file" << file.fullPath << std::endl;
         return;
     }
     //std::stringstream pixelDataArrayStringStream;
@@ -336,7 +337,7 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
     int width = *(int*)&headerBytes[18];
 
     int headerSize = 58;
-    int dhtSerializedSize = SerializeHuffTable(fileInfo->encodedPath, 58);
+    int dhtSerializedSize = SerializeHuffTable(file.fullPath, 58);
     int pixelDataOffset = headerSize+dhtSerializedSize;
 
     int encodedFileSize = std::bitset<32>(headerSize + dhtSerializedSize).to_ulong();
@@ -374,7 +375,7 @@ void ImageCompressor::EncodeCompressedImage(FileConverter::FileInfo *fileInfo, i
     
 }
 
-void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
+void ImageCompressor::DecompressImageFile(File& file){
     int height = 0;
     int width = 0;
     long offset = 0;
@@ -382,10 +383,10 @@ void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
     int dataArraySize = 0;
     unsigned char header[58];
 
-    FILE* encodedFile = fopen(fileInfo->encodedPath.c_str(), "rb");
+    FILE* encodedFile = fopen(file.fullPath.c_str(), "rb");
     if (encodedFile == nullptr)
     {
-        std::cout << "Error opening encoded file" << fileInfo->encodedPath << std::endl;
+        std::cout << "Error opening encoded file" << file.fullPath << std::endl;
         return;
     }
 
@@ -410,7 +411,7 @@ void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
     //fseek(encodedFile, 58, SEEK_SET);
     
     //Read in DHT
-    DeserializeHuffTable(fileInfo->encodedPath, 58, offset);
+    DeserializeHuffTable(file.fullPath, 58, offset);
     //Read in DHT tree codes and convert back to pixel values
     unsigned char* pixArr = new unsigned char[newHuffTable.codes.size()];
     std::vector<unsigned char> pixelArray(newHuffTable.codes.size());
@@ -419,7 +420,7 @@ void ImageCompressor::DecompressImageFile(FileConverter::FileInfo* fileInfo){
         int decodedPixelValue = newHuffTable.table[encodedPixelCode];
         pixArr[i] = decodedPixelValue & 0xFF;
         //std::string decodedPixelValuesBits = std::bitset<sizeof(unsigned char)>(decodedPixelValue).to_string();
-        std::cout << "ENCODED CODE = " << encodedPixelCode << " AT POS =" << i << " = " << decodedPixelValue << " STORED AS =" << (decodedPixelValue & 0xFF) << std::endl;
+        //std::cout << "ENCODED CODE = " << encodedPixelCode << " AT POS =" << i << " = " << decodedPixelValue << " STORED AS = " << (decodedPixelValue & 0xFF) << std::endl;
     }
 
     /*
@@ -521,10 +522,10 @@ void ImageCompressor::TestEncoding(std::string s){
     cimg_library::CImg<unsigned char> image(s.c_str());
     unsigned char* pixData = image.data();
     cimg_library::CImg<unsigned char> newImage(pixData, image.width(), image.height(), 1, 3);
-    newImage.save_bmp("/home/jon/ImageCompressor/test.bmp");
+    newImage.save_bmp("/home/jon/ImageCompressor/test_refactored.bmp");
 }
 
 void ImageCompressor::TestDecoding(unsigned char* pixelArr, int width, int height){
     cimg_library::CImg<unsigned char> newImage(pixelArr, width, height, 1, 3);
-    newImage.save_bmp("/home/jon/ImageCompressor/test_decoding.bmp");
+    newImage.save_bmp("/home/jon/ImageCompressor/test_decoding_refactored.bmp");
 }
