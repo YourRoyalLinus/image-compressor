@@ -1,4 +1,5 @@
 #include "../include/ImageCompressionEngine.h"
+#include "../include/Compressor.h"
 #include <assert.h>
 
 ImageCompressionEngine::ImageCompressionEngine(Batch* b) : batch(b),  fileMarshaller(new FileMarshaller()), imageCompressor(new ImageCompressor()){
@@ -50,11 +51,15 @@ int ImageCompressionEngine::StartBatchCompression(){ //BREAKUP FURTHER
             fileMarshaller->UpdateFilePath(batch->outboundPath, *currentFile);
             //Add currentFile to cleanup
             fileMarshaller->ConvertFileToBMP(*currentFile);
+            HuffmanEncodingContext* encodingContext = new HuffmanEncodingContext(currentFile->fullPath.c_str());
+            Compressor::CreateContext(*encodingContext);
 
+            //std::string encodedFilePath = currentFile->relativePath + "/" + currentFile->name + "_encoded.bin";
+            //Compressor::EncodeImageFile(encodedFilePath.c_str(), *encodingContext);
+            exit(0);
             imageCompressor->CompressImageFile(*currentFile);
-            long compressedSize = fileMarshaller->GetFileSize(*currentFile);
+            long compressedSize = fileMarshaller->GetFileSize(currentFile->fullPath);
 
-            
             //Add currentFile to cleanup
             fileMarshaller->WriteFileToDisk(*currentFile);
             
