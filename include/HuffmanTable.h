@@ -6,12 +6,15 @@
 #include "cereal/types/string.hpp"
 #include "cereal/types/unordered_map.hpp"
 #include "cereal/types/vector.hpp"
+#include "cereal/types/polymorphic.hpp"
 #include <unordered_map>
 
 //TODO OPTIMIZE
 class HuffmanTable : public Artifact{
     public:
-        HuffmanTable(){ }
+        HuffmanTable(){ 
+            type = Artifact::ArtifactType::HUFFMANTABLE;
+        }
 
         HuffmanTable(const HuffmanTable &ht){
             table = ht.table;
@@ -29,5 +32,8 @@ class HuffmanTable : public Artifact{
             archive( CEREAL_NVP(table), CEREAL_NVP(codeLengths), CEREAL_NVP(codes) ); // serialize things by passing them to the archive
         }
 };
+
+CEREAL_REGISTER_TYPE(HuffmanTable);
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Artifact, HuffmanTable);
 
 #endif

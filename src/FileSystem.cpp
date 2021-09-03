@@ -26,7 +26,15 @@ std::string FileSystem::CreatePath(const std::string& srcPath, const std::string
     return newPath;
 }
 
+std::ofstream FileSystem::CreateFileStream(const std::string& filePath, std::ios_base::openmode mode){
+    std::ofstream f(filePath, mode);
+    if (!f.is_open())
+    {
+        std::cout << "Error opening file" << filePath << std::endl;
+    }
 
+    return f;
+}
 std::string FileSystem::FindUserPath(){
     struct passwd *pw = getpwuid(getuid());
     const char *homedir = pw->pw_dir;

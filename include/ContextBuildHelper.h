@@ -1,5 +1,5 @@
-#ifndef CONTEXTBUILDERHELPER_H
-#define CONTEXTBUILDERHELPER_H
+#ifndef CONTEXTBUILDHELPER_H
+#define CONTEXTBUILDHELPER_H
 
 #include "Utils.h"
 #include "BMPImage.h"
@@ -9,7 +9,7 @@
 #include "HuffmanEncodingContext.h"
 #include <assert.h>
 
-class ContextBuilderHelper{
+class ContextBuildHelper{
     public:
         static int* GetHistogram(int pixelBufferSize, unsigned char* pixelDataArray ){
             int* hist = new int[256];
@@ -232,7 +232,7 @@ class ContextBuilderHelper{
                 pixVal = *(pixelDataArray+i);
                 for(unsigned k = 0; k < nonZeroNodes; k++){
                     if(pixVal == pixFreqs[k].pix){
-                        InsertCodeLengths(k, pixFreqs, huffTable);                
+                        InsertCodeLengths(k, pixFreqs, huffTable); 
                     }
                 }
             }

@@ -1,7 +1,8 @@
 #ifndef FILEMARSHALLER_H
 #define FILEMARSHALLER_H
 
-#include "../include/File.h"
+#include "File.h"
+#include <ios>
 
 class FileMarshaller{
     public:
@@ -15,9 +16,11 @@ class FileMarshaller{
         long GetFileSize(const File& file);
 
         std::string CreateLocalCopy(std::string localDirPath, File& file);
-        std::string CreateHomePath();
         std::string CreatePath(std::string src, std::string path);
-        
+        std::string CreateHomePath();
+
+        std::ofstream CreateFileStream(std::string encodedFilePath, std::ios_base::openmode mode);
+
         bool DoesPathExist(std::string filePath);
         bool IsValidFileType(std::string fileExt);
 

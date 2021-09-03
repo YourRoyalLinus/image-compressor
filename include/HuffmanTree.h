@@ -5,6 +5,9 @@
 
 class HuffmanTree : public Artifact{
     public:
+        HuffmanTree(){
+            type = Artifact::ArtifactType::HUFFMANTREE;
+        }
         int pix;
         int arrloc;
         float freq;

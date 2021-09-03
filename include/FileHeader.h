@@ -1,6 +1,7 @@
 #ifndef FILEHEADER_H
 #define FILEHEADER_H
 
+
 class FileHeader{
     public:
         FileHeader(unsigned char* buffer){
@@ -14,7 +15,7 @@ class FileHeader{
         }
 
         unsigned char* WriteToBuffer(){
-            FreeBufferPtr();
+            ClearBuffer(); 
             WriteFileHeaderData();
             WriteFileInfoData();
             return _buffer;
@@ -45,7 +46,11 @@ class FileHeader{
         unsigned char* _buffer;
 
         void FreeBufferPtr(){
-            delete[] _buffer;
+            delete _buffer;
+        }
+
+        void ClearBuffer(){
+            _buffer = new unsigned char[size];
         }
 
         void GetFileHeaderData(){
@@ -182,7 +187,7 @@ class FileHeader{
                 shiftBits -= 8;
                 currentByte--;   
             }
-            _buffer[currentByte] = shiftBits & 0xFF;
+            _buffer[currentByte] = value & 0xFF;
             
         }
 
@@ -196,7 +201,7 @@ class FileHeader{
                 shiftBits -= 8;
                 currentByte--;   
             }
-            _buffer[currentByte] = shiftBits & 0xFF;
+            _buffer[currentByte] = value & 0xFF;
         }
 
         void WriteBytesToBuffer(unsigned int startByte, int value){
@@ -209,26 +214,26 @@ class FileHeader{
                 shiftBits -= 8;
                 currentByte--;   
             }
-            _buffer[currentByte] = shiftBits & 0xFF;
+            _buffer[currentByte] = value & 0xFF;
         }
 
-        const unsigned char fileTypeStartByte = 0;
-        const unsigned char fileSizeStartByte = 2;
-        const unsigned char reservedOneStartByte = 6;
-        const unsigned char reservedTwoStartByte = 8;
-        const unsigned char pixelDataOffsetStartByte = 10;
+        const unsigned int fileTypeStartByte = 0;
+        const unsigned int fileSizeStartByte = 2;
+        const unsigned int reservedOneStartByte = 6;
+        const unsigned int reservedTwoStartByte = 8;
+        const unsigned int pixelDataOffsetStartByte = 10;
 
-        const unsigned char headerSizeStartByte = 14;
-        const unsigned char imageWidthStartByte = 18;
-        const unsigned char imageHeightStartByte = 22;
-        const unsigned char planesStartByte = 26;
-        const unsigned char bitsPerPixelStartByte = 28;
-        const unsigned char compressionStartByte = 30;
-        const unsigned char imageSizeStartByte = 34;
-        const unsigned char xPixelsPerMeterStartByte = 48;
-        const unsigned char yPixelsPerMeterStartByte = 42;
-        const unsigned char totalColorsStartByte = 46;
-        const unsigned char importantColorsStartByte = 50;   
+        const unsigned int headerSizeStartByte = 14;
+        const unsigned int imageWidthStartByte = 18;
+        const unsigned int imageHeightStartByte = 22;
+        const unsigned int planesStartByte = 26;
+        const unsigned int bitsPerPixelStartByte = 28;
+        const unsigned int compressionStartByte = 30;
+        const unsigned int imageSizeStartByte = 34;
+        const unsigned int xPixelsPerMeterStartByte = 38;
+        const unsigned int yPixelsPerMeterStartByte = 42;
+        const unsigned int totalColorsStartByte = 46;
+        const unsigned int importantColorsStartByte = 50;   
 };
 
 #endif

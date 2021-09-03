@@ -10,6 +10,7 @@ class BMPImage : public Artifact{
 
         BMPImage(const char* filePath){
             path = filePath;
+            type = Artifact::ArtifactType::BMPIMAGE;
         }  
 
         ~BMPImage(){

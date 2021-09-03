@@ -2,6 +2,7 @@
 #define FILESYSTEM_H
 
 #include <string>
+#include <fstream>
 
 //TODO throws errors?
 class FileSystem{
@@ -10,6 +11,7 @@ class FileSystem{
         
         std::string CreatePath(const std::string& srcPath, const std::string& destPath);
         std::string FindUserPath();
+        std::ofstream CreateFileStream(const std::string& filePath, std::ios_base::openmode mode);
         void CopyFileContents(const std::string& srcFile, const std::string& destFile);
         void DeleteFile(const std::string& filePath);
         long GetFileSize(const std::string& stringPath);

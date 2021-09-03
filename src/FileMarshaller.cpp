@@ -25,6 +25,16 @@ long FileMarshaller::GetFileSize(const File& file){
     return FileSystem::instance().GetFileSize(file.fullPath);
 }
 
+std::string FileMarshaller::CreateLocalCopy(std::string localDirPath, File& file){
+    std::string destPath = localDirPath + "/" + file.name + "." + file.ext;
+    FileSystem::instance().CopyFileContents(file.fullPath, destPath);
+    return destPath;
+}
+
+std::string FileMarshaller::CreatePath(std::string src, std::string path){
+    return FileSystem::instance().CreatePath(src, path);
+}
+
 std::string FileMarshaller::CreateHomePath(){
     std::string usrPath = FileSystem::instance().FindUserPath();
     std::string homePath = usrPath +"/ImageCompressor";
@@ -36,15 +46,8 @@ std::string FileMarshaller::CreateHomePath(){
     return homePath;
 }
 
-std::string FileMarshaller::CreatePath(std::string src, std::string path){
-    return FileSystem::instance().CreatePath(src, path);
-}
-
-
-std::string FileMarshaller::CreateLocalCopy(std::string localDirPath, File& file){
-    std::string destPath = localDirPath + "/" + file.name + "." + file.ext;
-    FileSystem::instance().CopyFileContents(file.fullPath, destPath);
-    return destPath;
+std::ofstream FileMarshaller::CreateFileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+    return FileSystem::instance().CreateFileStream(encodedFilePath, mode);
 }
 
 bool FileMarshaller::DoesPathExist(std::string filePath){
@@ -54,7 +57,6 @@ bool FileMarshaller::DoesPathExist(std::string filePath){
 bool FileMarshaller::IsValidFileType(std::string fileExt){
     return FileSystem::instance().IsValidFileType(fileExt);
 }
-
 
 void FileMarshaller::WriteFileToDisk(File& file){
     int height = 0;

@@ -3,16 +3,25 @@
 
 class Artifact{
     public:
-        Artifact* GetArtifact(){
-            return this; 
+        enum ArtifactType{
+            PIXELFREQUENCIES,
+            HUFFMANTABLE,
+            HUFFMANTREE,
+            BMPIMAGE
+        };
+        
+        ArtifactType GetArtifactType(){
+            return type; 
         }
 
         void DeleteArtifact(){
             delete this;
         }
+
         virtual ~Artifact(){ } 
     protected:
-        Artifact() { }   
+        Artifact() { } 
+        ArtifactType type;  
 };
 
 
