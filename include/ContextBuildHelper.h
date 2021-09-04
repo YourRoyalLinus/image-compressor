@@ -86,7 +86,7 @@ class ContextBuildHelper{
                 if(hist[i] != 0){
 
                     // pixel intensity value
-                    pixFreqs[j].pix = i; 
+                    huffTree[j].pix = i; 
                     pixFreqs[j].pix = i;
                     
                     // location of the node in the pixFreq array
@@ -110,12 +110,12 @@ class ContextBuildHelper{
         }
         
         // Sorting w.r.t probability of occurrence
-        static void SortHuffCodeArray(int nodes, HuffmanTree* huffTree){
+        static void SortHuffCodeArray(int nonZeroNodes, HuffmanTree* huffTree){
             HuffmanTree tempHuff;
             
-            for (int i = 0; i < nodes; i++)
+            for (int i = 0; i < nonZeroNodes; i++)
             {
-                for (int j = i + 1; j < nodes; j++) 
+                for (int j = i + 1; j < nonZeroNodes; j++) 
                 {
                     if (huffTree[i].freq < huffTree[j].freq) 
                     {
@@ -127,25 +127,25 @@ class ContextBuildHelper{
             }
         }
 
-        static void CreateHuffmanTree(int nodes, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
+        static void CreateHuffmanTree(int nonZeroNodes, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
             float sumProb;
             int sumPix;
             int n = 0;
-            int nextNode = nodes;
+            int nextNode = nonZeroNodes;
 
-            while (n < nodes - 1) 
+            while (n < nonZeroNodes - 1) 
             {
                 // Adding the lowest two probabilities
-                sumProb = huffTree[nodes - n - 1].freq + huffTree[nodes - n - 2].freq;
-                sumPix = huffTree[nodes - n - 1].pix + huffTree[nodes - n - 2].pix;
+                sumProb = huffTree[nonZeroNodes - n - 1].freq + huffTree[nonZeroNodes - n - 2].freq;
+                sumPix = huffTree[nonZeroNodes - n - 1].pix + huffTree[nonZeroNodes - n - 2].pix;
                 
                 // Appending to the pixFreq Array
                 pixFreqs[nextNode].pix = sumPix;
                 pixFreqs[nextNode].freq = sumProb;
-                pixFreqs[nextNode].left = &pixFreqs[huffTree[nodes - n - 2].arrloc];
+                pixFreqs[nextNode].left = &pixFreqs[huffTree[nonZeroNodes - n - 2].arrloc];
                 
                 // arrloc points to the location of the child node in the pixFreq array
-                pixFreqs[nextNode].right = &pixFreqs[huffTree[nodes - n - 1].arrloc];
+                pixFreqs[nextNode].right = &pixFreqs[huffTree[nonZeroNodes - n - 1].arrloc];
                 pixFreqs[nextNode].code[0] = '\0';
 
                 // Using sum of the pixel values as  new representation for the new node since unlike strings, we cannot 
@@ -158,7 +158,7 @@ class ContextBuildHelper{
                     i++;
                     
                 // Inserting the new node in the huffCode array
-                for (int k = nodes; k >= 0; k--) 
+                for (int k = nonZeroNodes; k >= 0; k--) 
                 {
                     if (k == i)
                     {
@@ -171,10 +171,9 @@ class ContextBuildHelper{
                         // Shifting the nodes below the new node by 1 For inserting the new node at the updated position k
                         huffTree[k] = huffTree[k - 1];
                 }
-
-                    n += 1;
-                    nextNode += 1;
-                }
+                n += 1;
+                nextNode += 1;
+            }
         }
         
         static void Backtrack( int nodes, int totalNodes, PixelFrequencies* pixFreqs){
@@ -213,7 +212,8 @@ class ContextBuildHelper{
             for(unsigned pixelValue = 0; pixelValue < 256; pixelValue++){
                 for(unsigned k = 0; k < nonZeroNodes; k++){
                     if(pixelValue == pixFreqs[k].pix){
-                        assert(pixFreqs[k].code != nullptr);                       
+                        assert(pixFreqs[k].code != nullptr);
+                        std::cout << "KEY CODE = " << pixFreqs[k].code << " REPRESENTS PIXELVALUE = " << pixelValue << std::endl;                       
                         std::string c = pixFreqs[k].code;
                         temp[c] = pixelValue;
                         break;
