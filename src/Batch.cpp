@@ -1,7 +1,7 @@
 #include "../include/Batch.h"
 #include <iostream>
 
- Batch::Batch(std::vector<std::string> files, std::string iPath, std::string oPath) : inputFiles(files), inboundPath(iPath), outboundPath(oPath){
+ Batch::Batch(std::vector<std::string> files, std::string iPath, std::string oPath) : inputFiles(files), inboundPath(iPath), outboundPath(oPath), batchSize(files.size()), successfulExecutions(0){
 
 }
 

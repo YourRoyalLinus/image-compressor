@@ -2,7 +2,7 @@
 #define FILEHEADER_H
 
 
-class FileHeader{
+struct FileHeader{
     public:
         FileHeader(unsigned char* buffer){
             _buffer = buffer;

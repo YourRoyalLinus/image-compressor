@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 //TODO OPTIMIZE
-class HuffmanTable : public Artifact{
+struct HuffmanTable : public Artifact{
     public:
         HuffmanTable(){ 
             type = Artifact::ArtifactType::HUFFMANTABLE;

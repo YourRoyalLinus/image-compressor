@@ -1,5 +1,5 @@
 #include "../include/HuffmanEncodingContext.h"
-
+#include <cstdio>
 #include <fstream>
 
 HuffmanEncodingContext::HuffmanEncodingContext(const char* filePath){
@@ -46,7 +46,6 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     int* hist = ContextBuildHelper::GetHistogram(pixelBufferSize, pixelDataArray);
     int nonZeroNodes = ContextBuildHelper::GetNonZeroOccurances(hist);
     float probability = ContextBuildHelper::GetMinimumProbabilityOfOccurance(hist, imageWidth, imageHeight);
- 
     int totalNodes = ContextBuildHelper::GetTotalNodes(nonZeroNodes);
     int maxCodeLength = ContextBuildHelper::GetMaxCodeLength(probability);
 
@@ -84,9 +83,10 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
         int encodedFileSize = imageHeaderSize + dhtSerializedSize + 0;//GETPIXELDATASIZE
         GetBMPImage()->header->compression = 3;
         GetBMPImage()->header->pixelDataOffset = pixelDataOffset;
-        //GetBMPImage()->header->imageSize = encodedFileSize;
+        GetBMPImage()->header->imageSize = encodedFileSize;
 
         unsigned char* headerBuffer = GetBMPImage()->header->WriteToBuffer();
+        
         WriteHeaderDataTo(encodedImageStream, headerBuffer, imageHeaderSize);
         encodedImageStream.flush();
     }

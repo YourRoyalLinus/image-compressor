@@ -3,7 +3,7 @@
 
 #include "Artifact.h"
 
-class HuffmanTree : public Artifact{
+struct HuffmanTree : public Artifact{
     public:
         HuffmanTree(){
             type = Artifact::ArtifactType::HUFFMANTREE;

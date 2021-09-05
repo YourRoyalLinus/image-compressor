@@ -1,7 +1,7 @@
 #ifndef PIXELFREQUENCIES_H
 #define PIXELFREQUENCIES_H
 
-class PixelFrequencies : public Artifact{
+struct PixelFrequencies : public Artifact{
     public:
         PixelFrequencies(){
             type = Artifact::ArtifactType::PIXELFREQUENCIES;

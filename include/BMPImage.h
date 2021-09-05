@@ -5,7 +5,7 @@
 #include "Artifact.h"
 #include "CImg/CImg-2.9.8_pre051821/CImg.h"
 
-class BMPImage : public Artifact{
+struct BMPImage : public Artifact{
     public:
 
         BMPImage(const char* filePath){

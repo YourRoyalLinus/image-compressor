@@ -55,15 +55,14 @@ int ImageCompressionEngine::StartBatchCompression(){ //BREAKUP FURTHER
             HuffmanEncodingContext* encodingContext = new HuffmanEncodingContext(currentFile->fullPath.c_str());
             Compressor::CreateContext(*encodingContext);
             Compressor::EncodeImageFile(*encodingContext, *currentFile, *fileMarshaller);
-
-            exit(0);
-            imageCompressor->CompressImageFile(*currentFile);
+                   
+            currentFile->fullPath = currentFile->relativePath + "/" + currentFile->name + "_encoded.bin";
+            //imageCompressor->CompressImageFile(*currentFile);
             long compressedSize = fileMarshaller->GetFileSize(currentFile->fullPath);
 
             //Add currentFile to cleanup
-            fileMarshaller->WriteFileToDisk(*currentFile);
-            
-            
+            //fileMarshaller->WriteFileToDisk(*currentFile);
+                     
             if(currentFile->size < 0){
                 batch->ItemSuccessfullyProcessed(false);
                 std::cout << "Error reading encoded file information" << std::endl;

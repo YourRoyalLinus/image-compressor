@@ -3,6 +3,7 @@
 
 #include "../include/FileConverter.h"
 #include "../include/File.h"
+#include "../include/HuffmanTable.h"
 #include "CImg/CImg-2.9.8_pre051821/CImg.h"
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/string.hpp"
@@ -92,6 +93,7 @@ class ImageCompressor{
         struct HuffCode* huffCode;
         struct HuffTable* huffTable;
         struct HuffTable newHuffTable;
+        HuffmanTable ht;
         FILE* file;   
 };
 #endif

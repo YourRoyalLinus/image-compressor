@@ -381,7 +381,7 @@ void ImageCompressor::DecompressImageFile(File& file){
     long offset = 0;
     int fileSize = 0;
     int dataArraySize = 0;
-    unsigned char header[58];
+    unsigned char header[54];
 
     FILE* encodedFile = fopen(file.fullPath.c_str(), "rb");
     if (encodedFile == nullptr)
@@ -391,13 +391,13 @@ void ImageCompressor::DecompressImageFile(File& file){
     }
 
     // Reader header data into the header array
-    fread(header, sizeof(unsigned char), 58, encodedFile);
+    fread(header, sizeof(unsigned char), 54, encodedFile);
     fileSize = *(int*)&header[2];
     offset = *(int*)&header[10];
     width = *(int*)&header[18];
     height = *(int*)&header[22];
     dataArraySize = *(int*)&header[54];
-    int dhtBitStreamSize = offset-58; 
+    int dhtBitStreamSize = offset-54; 
 
     std::cout << "FILESIZE=" << fileSize << std::endl;
     std::cout << "OFFSET=" << offset << std::endl;
@@ -411,13 +411,13 @@ void ImageCompressor::DecompressImageFile(File& file){
     //fseek(encodedFile, 58, SEEK_SET);
     
     //Read in DHT
-    DeserializeHuffTable(file.fullPath, 58, offset);
+    DeserializeHuffTable(file.fullPath, 54, offset);
     //Read in DHT tree codes and convert back to pixel values
-    unsigned char* pixArr = new unsigned char[newHuffTable.codes.size()];
-    std::vector<unsigned char> pixelArray(newHuffTable.codes.size());
-    for(unsigned i = 0; i < newHuffTable.codes.size(); i++){
-        std::string encodedPixelCode = newHuffTable.codes[i];
-        int decodedPixelValue = newHuffTable.table[encodedPixelCode];
+    unsigned char* pixArr = new unsigned char[ht.codes.size()];
+    std::vector<unsigned char> pixelArray(ht.codes.size());
+    for(unsigned i = 0; i < ht.codes.size(); i++){
+        std::string encodedPixelCode = ht.codes[i];
+        int decodedPixelValue = ht.table[encodedPixelCode];
         pixArr[i] = decodedPixelValue & 0xFF;
         //std::string decodedPixelValuesBits = std::bitset<sizeof(unsigned char)>(decodedPixelValue).to_string();
         //std::cout << "ENCODED CODE = " << encodedPixelCode << " AT POS =" << i << " = " << decodedPixelValue << " STORED AS = " << (decodedPixelValue & 0xFF) << std::endl;
@@ -506,16 +506,17 @@ int ImageCompressor::SerializeHuffTable(std::string encodedFilePath, int offset)
 }
 
 void ImageCompressor::DeserializeHuffTable(std::string encodedFilePath, int offset, int end){
-    struct HuffTable tmpHuffTable;
+    HuffmanTable tmpHuffTable;
     std::ifstream serializedInputFile = std::ifstream(encodedFilePath, std::ifstream::binary);
     serializedInputFile.seekg(offset);
     {
         cereal::BinaryInputArchive binaryInputArchive(serializedInputFile);
+        std::cout << "TESTING IA" << std::endl;
         binaryInputArchive(tmpHuffTable);
     }
+    std::cout << "TESTING scope =" << tmpHuffTable.codes[0] << std::endl;
+    ht = tmpHuffTable;
     
-    newHuffTable = tmpHuffTable;
-    std::cout << "TESTING scope =" << huffTable->codes[0] << std::endl;
 
 }
 void ImageCompressor::TestEncoding(std::string s){
