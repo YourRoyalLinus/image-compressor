@@ -57,25 +57,18 @@ int ImageCompressionEngine::StartBatchCompression(){ //BREAKUP FURTHER
             Compressor::EncodeImageFile(*encodingContext, *currentFile, *fileMarshaller);
                    
             currentFile->fullPath = currentFile->relativePath + "/" + currentFile->name + "_encoded.bin";
-            //imageCompressor->CompressImageFile(*currentFile);
             long compressedSize = fileMarshaller->GetFileSize(currentFile->fullPath);
 
-            //Add currentFile to cleanup
-            //fileMarshaller->WriteFileToDisk(*currentFile);
-                     
             if(currentFile->size < 0){
                 batch->ItemSuccessfullyProcessed(false);
                 std::cout << "Error reading encoded file information" << std::endl;
             }            
 
-            imageCompressor->DecompressImageFile(*currentFile);
-
-            
+            Compressor::DecodeImageFile(*encodingContext, *currentFile, *fileMarshaller);
+          
             batch->ExecuteEnd();
             batch->RecordExecutionResults(startSize, compressedSize);
             batch->ItemSuccessfullyProcessed(true);
-
-            //CleanupTmpFiles;
         }
         catch(std::pair<std::exception, std::string>& e){
             batch->ItemSuccessfullyProcessed(false);

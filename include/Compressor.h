@@ -9,6 +9,7 @@ class Compressor{
     public:
         static void CreateContext(Context& context);
         static void EncodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller);
+        static void DecodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller);
 };
 
 #endif

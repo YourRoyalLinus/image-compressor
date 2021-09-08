@@ -46,8 +46,12 @@ std::string FileMarshaller::CreateHomePath(){
     return homePath;
 }
 
-std::ofstream FileMarshaller::CreateFileStream(std::string encodedFilePath, std::ios_base::openmode mode){
-    return FileSystem::instance().CreateFileStream(encodedFilePath, mode);
+std::ofstream FileMarshaller::CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+    return FileSystem::instance().CreateOutfileStream(encodedFilePath, mode);
+}
+
+std::ifstream FileMarshaller::CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+    return FileSystem::instance().CreateInfileStream(encodedFilePath, mode);
 }
 
 bool FileMarshaller::DoesPathExist(std::string filePath){

@@ -1,12 +1,15 @@
 #include "../include/HuffmanEncodingContext.h"
+#include "../include/HuffmanDecodingStrategy.h"
 #include <cstdio>
 #include <fstream>
 
 HuffmanEncodingContext::HuffmanEncodingContext(const char* filePath){
+    decodingStrategy = new HuffmanDecodingStrategy();
     contextFilePath = filePath;
 }
 
 HuffmanEncodingContext::HuffmanEncodingContext(File& f){ //NEW
+    decodingStrategy = new HuffmanDecodingStrategy();
     contextFilePath = f.fullPath.c_str();
 }
 
@@ -93,11 +96,16 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
       
 }
 
+void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshaller){
+    decodingStrategy->Decode(currentFile, marshaller);
+}
+
+
 //MOVED OUT PROB
 std::ofstream HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
     std::string encodedFilePath = currentFile.relativePath + "/" + currentFile.name + "_encoded.bin";
     //CHANGE FILE TO ENCODED FILE PATH
-    return marshaller.CreateFileStream(encodedFilePath, std::ofstream::binary);
+    return marshaller.CreateOutfileStream(encodedFilePath, std::ofstream::binary);
 }
 
 int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream, HuffmanEncodingContext& context, unsigned int fileOffset){

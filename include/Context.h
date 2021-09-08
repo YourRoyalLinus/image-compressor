@@ -2,6 +2,7 @@
 #define CONTEXT_H
 
 #include "Artifact.h"
+#include <iostream>
 #include <unordered_map>
 
 class Context{

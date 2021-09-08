@@ -1,8 +1,6 @@
 #ifndef HUFFMANENCODINGCONTEXT_H
 #define HUFFMANENCODINGCONTEXT_H
 
-#include "FileMarshaller.h"
-
 #include "ContextBuildHelper.h"
 #include "EncodingContext.h"
 #include "HuffmanTree.h"
@@ -15,7 +13,7 @@ class HuffmanEncodingContext : public EncodingContext{
         ~HuffmanEncodingContext();
         void Build() override;
         void Encode(File& currentFile, FileMarshaller& marshaller) override;
-
+        void Decode(File& currentFile, FileMarshaller& marshaller) override;
         HuffmanTree* GetHuffmanTree();
         HuffmanTable* GetHuffmanTable();
     private:

@@ -16,4 +16,7 @@ void Compressor::EncodeImageFile(EncodingContext& encodingContext, File& current
     encodingContext.Encode(currentFile, marshaller);
 }
 
+void Compressor::DecodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
+    encodingContext.Decode(currentFile, marshaller);
+}
 

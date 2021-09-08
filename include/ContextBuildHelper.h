@@ -213,7 +213,6 @@ class ContextBuildHelper{
                 for(unsigned k = 0; k < nonZeroNodes; k++){
                     if(pixelValue == pixFreqs[k].pix){
                         assert(pixFreqs[k].code != nullptr);
-                        std::cout << "KEY CODE = " << pixFreqs[k].code << " REPRESENTS PIXELVALUE = " << pixelValue << std::endl;                       
                         std::string c = pixFreqs[k].code;
                         temp[c] = pixelValue;
                         break;
