@@ -23,7 +23,6 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
             std::string encodedPixelCode = desHuffmanTable .codes[i];
             int decodedPixelValue = desHuffmanTable .table[encodedPixelCode];
             pixArr[i] = decodedPixelValue & 0xFF;
-            //std::cout << "ENCODED CODE = " << encodedPixelCode << " AT POS =" << i << " = " << decodedPixelValue << " STORED AS = " << (decodedPixelValue & 0xFF) << std::endl;
         }
         
         TestDecoding(pixArr, headerData->imageWidth, headerData->imageHeight);
