@@ -23,11 +23,39 @@ clean:
 
 ROOT_DIR=lib/
 IMAGE_MAGIC_DIR := $(ROOT_DIR)ImageMagick-Latest/
-TEST_LOG := $(IMAGE_MAGIC_DIR)test-suite.log
+CEREAL_DIR := $(ROOT_DIR)Cereal-1.3.0
+CIMG_DIR := $(ROOT_DIR)CImg-2.9.9
 
-dependencies:	install-imagemagick	validate-imagemagick
+IM_TEST_LOG := $(IMAGE_MAGIC_DIR)test-suite.log
 
-install-imagemagick:	libs
+dependencies:	fetch-cimg fetch-imagemagick configure-imagemagick validate-imagemagick fetch-cereal 
+
+fetch-cimg:
+	@echo Downloading CImg-2.9.9...
+	$(warning Downloading requires sudo permissions)
+	@mkdir -p $(CIMG_DIR)
+	@sudo wget --directory-prefix=$(CIMG_DIR) -q https://github.com/dtschump/CImg/archive/refs/tags/v.2.9.9.tar.gz
+	@tar xzf $(CIMG_DIR)/v.2.9.9.tar.gz -C $(CIMG_DIR) --strip-components 1
+	@echo Download Complete!
+
+fetch-imagemagick: install-imagemagick-packages
+	@echo Downloading ImageMagick...
+	$(warning Downloading requires sudo permissions)
+	@mkdir -p $(IMAGE_MAGIC_DIR)
+	@sudo wget --directory-prefix=$(IMAGE_MAGIC_DIR) -q https://www.imagemagick.org/download/ImageMagick.tar.gz
+	@tar xzf $(IMAGE_MAGIC_DIR)/ImageMagick.tar.gz -C $(IMAGE_MAGIC_DIR) --strip-components 1
+	@echo Download Complete!
+
+install-imagemagick-packages:
+	@echo Installing Dependent Packages... 
+	$(warning Installing dependencies requires sudo permissions)
+ 
+	@if ! dpkg -l | grep build-essential -c -q; then sudo apt-get -y install > /dev/null build-essential ; fi 
+	@if ! dpkg -l | grep libtiff-dev -c -q; then sudo apt-get -y install > /dev/null libtiff-dev; fi 	
+
+	@echo Installation Complete!
+
+configure-imagemagick:
 	@echo Configuring ImageMagick...
 	$(warning Configuring requires sudo permissions)
 	@cd $(IMAGE_MAGIC_DIR) && ./configure --disable-shared --silent
@@ -44,29 +72,29 @@ validate-imagemagick:
 	@echo Running Test Suite...
 	$(warning Testing requires sudo permissions)
 	@sudo make check -C $(IMAGE_MAGIC_DIR) > /dev/null 
-	@echo Test results: $(TEST_LOG)
+	@echo Test results: $(IM_TEST_LOG)
 	@echo Testing Complete!
+
+fetch-cereal:
+	@echo Downloading Cereal-1.3.0...
+	$(warning Downloading requires sudo permissions)
+	@mkdir -p $(CEREAL_DIR)
+	@sudo wget --directory-prefix=$(CEREAL_DIR) -q https://github.com/USCiLab/cereal/archive/v1.3.0.tar.gz
+	@tar xzf $(CEREAL_DIR)/v1.3.0.tar.gz -C $(CEREAL_DIR) --strip-components 1
+	@echo Download Complete!
+
+remove-dependencies:	remove-cimg remove-imagemagick remove-cereal
+	@sudo rm -r $(ROOT_DIR)
+	
+remove-cimg:
+	$(warning Uninstalling CImg requires sudo permissions)
+	@sudo rm -r $(CIMG_DIR)
 
 remove-imagemagick:
 	$(warning Uninstalling ImageMagick requires sudo permissions)
 	@sudo rm -r $(IMAGE_MAGIC_DIR)
-	@sudo rm -r lib/
 
-libs:	packages
-	@echo Downloading ImageMagick...
-	$(warning Downloading requires sudo permissions)
-	@mkdir -p $(IMAGE_MAGIC_DIR)
-	@sudo wget --directory-prefix=$(IMAGE_MAGIC_DIR) -q https://www.imagemagick.org/download/ImageMagick.tar.gz
-	@tar xzf $(IMAGE_MAGIC_DIR)/ImageMagick.tar.gz -C $(IMAGE_MAGIC_DIR) --strip-components 1
-	@echo Download Complete!
-
-packages:
-	@echo Installing Dependent Packages... 
-	$(warning Installing dependencies requires sudo permissions)
- 
-	@if ! dpkg -l | grep build-essential -c -q; then sudo apt-get -y install > /dev/null build-essential ; fi 
-	@if ! dpkg -l | grep libjpeg62-dev -c -q; then sudo apt-get -y install > /dev/null libjpeg62-dev; fi 
-	@if ! dpkg -l | grep libpng-dev -c -q; then sudo apt-get -y install > /dev/null libpng-dev; fi 
-	@if ! dpkg -l | grep libtiff-dev -c -q; then sudo apt-get -y install > /dev/null libtiff-dev; fi 	
-
-	@echo Installation Complete!
+remove-cereal:
+	$(warning Uninstalling Cereal requires sudo permissions)
+	@sudo rm -r $(CEREAL_DIR)
+	
