@@ -1,8 +1,8 @@
-#include "../include/CommandLineHandler.h"
-#include "../include/ImageCompressionEngine.h"
-#include "../include/FileMarshaller.h"
-#include "../include/Batch.h"
-#include "../include/Utils.h"
+#include "../include/CommandLineHandling/CommandLineHandler.h"
+#include "../include/ImageCompression/ImageCompressionEngine.h"
+#include "../include/ImageCompression/Batch.h"
+#include "../include/FileHandling/FileMarshaller.h"
+#include "../include/Utils/Utils.h"
 
 #include <assert.h>
 #include <fstream>
