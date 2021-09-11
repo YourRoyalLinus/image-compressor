@@ -5,9 +5,8 @@
 #include "../Utils/Utils.h"
 #include "../Artifacts/BMPImage.h"
 #include "../Artifacts/PixelFrequencies.h"
-#include "../Artifacts/HuffmanTree.h"
-#include "../Artifacts/HuffmanTable.h"
-
+#include "../Artifacts/Huffman/HuffmanTree.h"
+#include "../Artifacts/Huffman/HuffmanTable.h"
 #include <assert.h>
 
 class ContextBuildHelper{

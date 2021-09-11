@@ -1,7 +1,7 @@
 #ifndef HUFFMANTREE_H
 #define HUFFMANTREE_H
 
-#include "./Artifact.h"
+#include "../Artifact.h"
 
 struct HuffmanTree : public Artifact{
     public:

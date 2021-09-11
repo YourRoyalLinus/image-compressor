@@ -1,7 +1,7 @@
 #ifndef HUFFMANTABLE_H
 #define HUFFMANTABLE_H
 
-#include "./Artifact.h"
+#include "../Artifact.h"
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/string.hpp"
 #include "cereal/types/unordered_map.hpp"

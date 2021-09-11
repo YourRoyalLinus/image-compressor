@@ -2,7 +2,7 @@
 #define HUFFMANDECODINGSTRATEGY_H
 
 #include "../DecodingStrategy.h"
-#include "../../Artifacts/HuffmanTable.h"
+#include "../../Artifacts/Huffman/HuffmanTable.h"
 
 class HuffmanDecodingStrategy : public DecodingStrategy{
     public:
