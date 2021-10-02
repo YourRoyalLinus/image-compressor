@@ -5,6 +5,9 @@
 #include "../EncodingContext.h"
 #include "../../Artifacts//Huffman/HuffmanTree.h"
 #include "../../Artifacts/Huffman/HuffmanTable.h"
+#include "../../Artifacts/Huffman/HuffmanEncoded.h"
+#include <vector>
+#include <string>
 
 class HuffmanEncodingContext : public EncodingContext{
     public:
@@ -16,13 +19,17 @@ class HuffmanEncodingContext : public EncodingContext{
         void Decode(File& currentFile, FileMarshaller& marshaller) override;
         HuffmanTree* GetHuffmanTree();
         HuffmanTable* GetHuffmanTable();
+        HuffmanEncoded* GetHuffmanEncoded();
+
     private:
+        std::vector<std::string> encodedPixelVec;
+
         void BuildHuffmanContext();
-        
         std::ofstream GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller);
         int SeralizeAndWriteTo(std::ofstream& encodedFileStream, HuffmanEncodingContext& context, unsigned int fileOffset);
         void WriteHeaderDataTo(std::ofstream& encodedFileStream, unsigned char* headerBuf, int headerBufSize);
-
+        int WriteEncodedDataTo(std::ofstream& encodedFileStream, int fileOffset, std::vector<std::string> encodedPixelVec);
+        void WriteByteToFile(std::ofstream& encodedFileStream, unsigned char* byteArray);
     
 };
 

@@ -5,8 +5,10 @@ class Artifact{
     public:
         enum ArtifactType{
             PIXELFREQUENCIES,
+            HUFFMANENCODED,
             HUFFMANTABLE,
             HUFFMANTREE,
+            HUFFMANTREENODE,
             BMPIMAGE
         };
         

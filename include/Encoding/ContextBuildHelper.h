@@ -1,13 +1,16 @@
 #ifndef CONTEXTBUILDHELPER_H
 #define CONTEXTBUILDHELPER_H
 
-#include "./Huffman/HuffmanEncodingContext.h"
 #include "../Utils/Utils.h"
 #include "../Artifacts/BMPImage.h"
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Artifacts/Huffman/HuffmanTree.h"
 #include "../Artifacts/Huffman/HuffmanTable.h"
+#include "../Artifacts/Huffman/HuffmanTreeNode.h"
+#include "./Huffman/HuffmanEncodingContext.h"
 #include <assert.h>
+#include <queue>
+#include <algorithm>
 
 class ContextBuildHelper{
     public:
@@ -206,42 +209,106 @@ class ContextBuildHelper{
             } 
         }
 
-        static HuffmanTable* CreateHuffmanTable(int nonZeroNodes, PixelFrequencies* pixFreqs){
-            HuffmanTable* ht = new HuffmanTable();
-            std::unordered_map<std::string, int> temp;
-            for(unsigned pixelValue = 0; pixelValue < 256; pixelValue++){
-                for(unsigned k = 0; k < nonZeroNodes; k++){
+        static std::unordered_map<int, std::string> CreateEncodingMap(int nonZeroNodes, PixelFrequencies* pixFreqs){
+            std::unordered_map<int, std::string> temp;
+            for(int pixelValue = 0; pixelValue < 256; pixelValue++){
+                for(int k = 0; k < nonZeroNodes; k++){
                     if(pixelValue == pixFreqs[k].pix){
                         assert(pixFreqs[k].code != nullptr);
                         std::string c = pixFreqs[k].code;
-                        temp[c] = pixelValue;
+                        temp[pixelValue] = c;
                         break;
                     }
                 }
             }
 
-            ht->table = temp;
-
-            return ht;
+            return temp;
         }
 
-        static void PopulateCodeLengths(int nonZeroNodes, int imageSize, unsigned char* pixelDataArray, PixelFrequencies* pixFreqs, HuffmanTable* huffTable){
+        static std::vector<std::string> CreateEncodedPixelVec(std::unordered_map<int, std::string> encodingMap,  int pixelDataArraySize, unsigned char* pixelDataArray) {
             int pixVal = 0;
-             for(unsigned i = 0; i < imageSize; i++){
+            std::vector<std::string> encodedPixelVec;
+            for(int i = 0; i < pixelDataArraySize; i++){
                 pixVal = *(pixelDataArray+i);
-                for(unsigned k = 0; k < nonZeroNodes; k++){
-                    if(pixVal == pixFreqs[k].pix){
-                        InsertCodeLengths(k, pixFreqs, huffTable); 
-                    }
+                encodedPixelVec.push_back(encodingMap[pixVal]);                
+            }
+
+            return encodedPixelVec;
+        }
+
+        static int GetEncodedPixelDataSize(std::vector<std::string> encodedPixelVec){
+            int s = 0;
+            for(int i = 0; i < encodedPixelVec.size(); i++){
+                s += encodedPixelVec[i].size();
+            }
+            
+            return s;
+        }
+
+        static std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, HuffmanTree* tree, int totalNodes){
+            std::vector<PixelFrequencies> test;
+            for(unsigned i = 0; i < totalNodes; i++){
+                std::cout << i << std::endl;
+                test.push_back(pixFreqs[i]);
+
+            }
+            std::sort(test.begin(), test.end(), Compare);
+            pixFreqs = &test[0];
+            for(int i = 0; i < totalNodes; i++){
+                std::cout << i << " NODE " << pixFreqs[i].pix << " FREQ " << pixFreqs[i].freq << std::endl;
+                if(pixFreqs[i].left != nullptr){
+                    std::cout << i << " LEFT CHILD " << pixFreqs[i].left->pix << " FREQ " << pixFreqs[i].left->freq << std::endl;
+                }
+                if(pixFreqs[i].right != nullptr){
+                    std::cout << i << " LEFT RIGHT " << pixFreqs[i].right->pix << " FREQ " << pixFreqs[i].right->freq << std::endl;
                 }
             }
             
+            std::queue<std::shared_ptr<HuffmanTreeNode>> q;
+            int node = 0;
+
+            PixelFrequencies pixFreqNode;
+            std::shared_ptr<HuffmanTreeNode> root = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(pixFreqs[node]));
+            std::shared_ptr<HuffmanTreeNode> currentNode = root;
+            
+            q.push(root);
+            while(node < totalNodes){
+                pixFreqNode = pixFreqs[node];
+                currentNode = q.front();
+                q.pop();
+                std::cout << "NODE: " << node << " PIX=" << currentNode->pix << " : " << currentNode->code << " - " << currentNode->freq << std::endl;
+                std::cout << "PIXFREQ:" << node << " PIX=" << pixFreqNode.pix << " : " << pixFreqNode.code << " - " << pixFreqNode.freq << std::endl;
+                if(currentNode->pix != pixFreqNode.pix){ // This is rife w/ potential for bugs
+                    PixelFrequencies tmp = pixFreqNode;
+                    pixFreqNode = pixFreqs[node+1];
+                    pixFreqs[node+1] = tmp;
+                     //Gotta clean this shit up
+                    std::cout << "SWAPPING " << tmp.pix << " & " << pixFreqNode.pix << std::endl;
+                    std::cout << "NEW SETUP:\n\n" ;
+                    std::cout << "NODE: " << node << " PIX=" << currentNode->pix << " : " << currentNode->code << " - " << currentNode->freq << std::endl;
+                    std::cout << "PIXFREQ:" << node << " PIX=" << pixFreqNode.pix << " : " << pixFreqNode.code << " - " << pixFreqNode.freq << std::endl;
+                }
+
+                if(pixFreqNode.left != nullptr){
+                    currentNode->left = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.left));
+                    std::cout << "NODE LEFT " << currentNode->left->code << std::endl;
+                    q.push(currentNode->left);
+                }
+                if(pixFreqNode.right != nullptr){
+                    currentNode->right = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.right));
+                    std::cout << "NODE RIGHT " << currentNode->right->code << std::endl;
+                    q.push(currentNode->right);
+                }
+                node++;
+                std::cout << std::endl;
+            }
+            std::cout << "REM = " << q.size() << std::endl;
+            return root;       
+
         }
     private:
-        static void InsertCodeLengths(int node, PixelFrequencies* pixFreqs, HuffmanTable* huffTable){
-            unsigned short int codeSize = strlen(pixFreqs[node].code);
-            huffTable->codeLengths.push_back(codeSize);
-            huffTable->codes.push_back(pixFreqs[node].code);
+        static bool Compare(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
+            return lhs.freq > rhs.freq;
         }
 };
 

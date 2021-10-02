@@ -2,7 +2,8 @@
 #define HUFFMANDECODINGSTRATEGY_H
 
 #include "../DecodingStrategy.h"
-#include "../../Artifacts/Huffman/HuffmanTable.h"
+#include "../../Artifacts/Huffman/HuffmanEncoded.h"
+#include <vector>
 
 class HuffmanDecodingStrategy : public DecodingStrategy{
     public:
@@ -12,7 +13,8 @@ class HuffmanDecodingStrategy : public DecodingStrategy{
     private:
         std::ifstream GetDecodedFileStream(File& currentFile, FileMarshaller& marshaller);
         FileHeader* GetHeaderData(std::ifstream& decodedFileStream, unsigned int headerSize); //WHICH CLASS HAS THIS RESPONSIBILITY? 
-        HuffmanTable DeserializeFileData(std::ifstream& encodedFileStream, unsigned int fileOffset);
+        HuffmanEncoded DeserializeFileData(std::ifstream& encodedFileStream);
+        unsigned char* DecodeNextHuffmanCode(unsigned char* encodedPixelArray, HuffmanEncoded huffEncoded);
         void TestDecoding(unsigned char* pixelArr, int width, int height);
 };
 
