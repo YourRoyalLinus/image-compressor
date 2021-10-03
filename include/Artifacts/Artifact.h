@@ -4,10 +4,10 @@
 class Artifact{
     public:
         enum ArtifactType{
+            BMPIMAGE,
             PIXELFREQUENCIES,
-            HUFFMANTABLE,
             HUFFMANTREE,
-            BMPIMAGE
+            HUFFMANTREENODE
         };
         
         ArtifactType GetArtifactType(){

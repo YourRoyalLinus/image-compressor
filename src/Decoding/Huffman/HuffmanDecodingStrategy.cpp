@@ -2,6 +2,8 @@
 #include "CImg/CImg-2.9.8_pre051821/CImg.h"
 #include <fstream>
 #include <vector>
+#include <ios>
+#include <bitset>
 
 HuffmanDecodingStrategy::HuffmanDecodingStrategy(){
 }
@@ -12,20 +14,18 @@ HuffmanDecodingStrategy::~HuffmanDecodingStrategy(){
 
 void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshaller){
     const unsigned int headerSize = 54; //WHO HOLDS THIS
+
     {
         std::ifstream decodedImageStream = GetDecodedFileStream(currentFile, marshaller); 
         FileHeader* headerData = GetHeaderData(decodedImageStream, headerSize);
-        HuffmanTable desHuffmanTable = DeserializeFileData(decodedImageStream, headerSize);
-
-        unsigned char* pixArr = new unsigned char[desHuffmanTable .codes.size()];
-        std::vector<unsigned char> pixelArray(desHuffmanTable .codes.size());
-        for(unsigned i = 0; i < desHuffmanTable .codes.size(); i++){
-            std::string encodedPixelCode = desHuffmanTable .codes[i];
-            int decodedPixelValue = desHuffmanTable .table[encodedPixelCode];
-            pixArr[i] = decodedPixelValue & 0xFF;
-        }
+        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(decodedImageStream);
         
-        TestDecoding(pixArr, headerData->imageWidth, headerData->imageHeight);
+        int encodedPixelArrayBytes = (headerData->imageSize - headerData->pixelDataOffset); 
+        unsigned char* encodedPixelArr = new unsigned char[encodedPixelArrayBytes];
+        decodedImageStream.read((char*) encodedPixelArr, encodedPixelArrayBytes);
+
+        unsigned char* decodedPixelArray = DecodeNextHuffmanCode(encodedPixelArr, encodedPixelArrayBytes, deserializedRootNode);
+        TestDecoding(decodedPixelArray, headerData->imageWidth, headerData->imageHeight);
     }
 }
 
@@ -42,16 +42,52 @@ FileHeader* HuffmanDecodingStrategy::GetHeaderData(std::ifstream& decodedImageSt
     return headerInfo;
 }
 
-HuffmanTable HuffmanDecodingStrategy::DeserializeFileData(std::ifstream& encodedFileStream, unsigned int fileOffset){
-    HuffmanTable tmpHuffTable;
-    encodedFileStream.seekg(fileOffset);
+std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(std::ifstream& encodedFileStream){
+    std::shared_ptr<HuffmanTreeNode> tmpRoot;
     {
         cereal::BinaryInputArchive binaryInputArchive(encodedFileStream);
-        binaryInputArchive(tmpHuffTable);
+        binaryInputArchive(tmpRoot);
     }
-    return tmpHuffTable;
+    return tmpRoot;
 }
 
+unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* encodedPixelArray, int encodedPixelArrayBytes,  std::shared_ptr<HuffmanTreeNode> rootNode){
+    std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
+    std::vector<unsigned char> decodedPixelArr;
+
+    int encodedPixelArrayBits = (encodedPixelArrayBytes*8);
+    int byteIndex = 0;
+    int bitIndex = 0;
+    int bits = 0;
+
+    unsigned char currentByte = encodedPixelArray[byteIndex++];
+    int nextCode;
+    int msb;
+    //Bit Manipulator
+    while(bits < encodedPixelArrayBits){
+        if(bitIndex >= 8){
+            currentByte = encodedPixelArray[byteIndex++];
+            bitIndex = 0;
+        }
+
+        if(currentNode->left == nullptr && currentNode->right == nullptr){
+            decodedPixelArr.push_back(currentNode->pix);
+            currentNode = rootNode;
+        }
+
+        msb = 7-bitIndex++;
+        nextCode = (currentByte >> msb) & 1;
+        if((nextCode ^ 0) == 0){
+            currentNode = currentNode->left;
+        }
+        else{
+            currentNode = currentNode->right;
+        }
+        bits++;        
+    }
+
+    return &decodedPixelArr[0];
+}
 void HuffmanDecodingStrategy::TestDecoding(unsigned char* pixelArr, int width, int height){
     cimg_library::CImg<unsigned char> newImage(pixelArr, width, height, 1, 3);
     newImage.save_bmp("/home/jon/ImageCompressor/test_decoding_refactored.bmp");

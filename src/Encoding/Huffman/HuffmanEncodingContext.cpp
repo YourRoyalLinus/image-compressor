@@ -2,6 +2,7 @@
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
 #include <cstdio>
 #include <fstream>
+#include <algorithm>
 
 HuffmanEncodingContext::HuffmanEncodingContext(const char* filePath){
     decodingStrategy = new HuffmanDecodingStrategy();
@@ -22,13 +23,6 @@ HuffmanTree* HuffmanEncodingContext::GetHuffmanTree(){
     return ht;
 }
 
-
-HuffmanTable* HuffmanEncodingContext::GetHuffmanTable(){
-    Artifact* ptr = Context::GetArtifact(Artifact::ArtifactType::HUFFMANTABLE);
-    HuffmanTable* ht = dynamic_cast<HuffmanTable*>(ptr);
-    return ht;
-}
-
 void HuffmanEncodingContext::Build(){
     BuildImage();
     BuildHuffmanContext();
@@ -43,8 +37,7 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     unsigned char* pixelDataArray = img->pixelDataArray;
 
     HuffmanTree* huffmanTree = 0;
-    HuffmanTable* huffmanTable = 0; 
-    PixelFrequencies* pixFreqs = 0;  
+    PixelFrequencies* pixFreqs = 0; 
 
     int* hist = ContextBuildHelper::GetHistogram(pixelBufferSize, pixelDataArray);
     int nonZeroNodes = ContextBuildHelper::GetNonZeroOccurances(hist);
@@ -60,12 +53,15 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     ContextBuildHelper::CreateHuffmanTree(nonZeroNodes, pixFreqs, huffmanTree);
     ContextBuildHelper::Backtrack(nonZeroNodes, totalNodes, pixFreqs);
 
-    huffmanTable = ContextBuildHelper::CreateHuffmanTable(nonZeroNodes, pixFreqs);
+    std::unordered_map<int, std::string> encodingMap = ContextBuildHelper::CreateEncodingMap(nonZeroNodes, pixFreqs);
+    encodedPixelVec = ContextBuildHelper::CreateEncodedPixelVec(encodingMap, pixelBufferSize, pixelDataArray);
+    encodedPixelDataBits = ContextBuildHelper::GetEncodedPixelDataSizeInBits(encodedPixelVec);
+    
+    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuildHelper::CreateHuffmanTreeNodes(pixFreqs, huffmanTree, totalNodes);
 
-    ContextBuildHelper::PopulateCodeLengths(nonZeroNodes, pixelBufferSize, pixelDataArray, pixFreqs, huffmanTable);
+    rootNode = huffmanRootNode;
 
     Context::AddArtifact(Artifact::ArtifactType::HUFFMANTREE, huffmanTree);
-    Context::AddArtifact(Artifact::ArtifactType::HUFFMANTABLE, huffmanTable);
     Context::AddArtifact(Artifact::ArtifactType::PIXELFREQUENCIES, pixFreqs);
 }
 
@@ -80,20 +76,23 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
 
     {
         std::ofstream encodedImageStream = GetEncodedFileStream(currentFile, marshaller); 
-        
-        int dhtSerializedSize = SeralizeAndWriteTo(encodedImageStream, *this, imageHeaderSize);
+
+        int dhtSerializedSize = SeralizeAndWriteTo(encodedImageStream, imageHeaderSize);
         int pixelDataOffset = imageHeaderSize + dhtSerializedSize;
-        int encodedFileSize = imageHeaderSize + dhtSerializedSize + 0;//GETPIXELDATASIZE
+
+        int bitPadding = WriteEncodedDataTo(encodedImageStream, pixelDataOffset);
+        encodedPixelDataBits += bitPadding;
+
+        int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
+
         GetBMPImage()->header->compression = 3;
         GetBMPImage()->header->pixelDataOffset = pixelDataOffset;
         GetBMPImage()->header->imageSize = encodedFileSize;
 
         unsigned char* headerBuffer = GetBMPImage()->header->WriteToBuffer();
-        
         WriteHeaderDataTo(encodedImageStream, headerBuffer, imageHeaderSize);
         encodedImageStream.flush();
     }
-      
 }
 
 void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshaller){
@@ -108,11 +107,11 @@ std::ofstream HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, Fi
     return marshaller.CreateOutfileStream(encodedFilePath, std::ofstream::binary);
 }
 
-int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream, HuffmanEncodingContext& context, unsigned int fileOffset){
+int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream, unsigned int fileOffset){
     encodedFileStream.seekp(fileOffset);
     {
         cereal::BinaryOutputArchive binaryOutputArchive(encodedFileStream);
-        binaryOutputArchive(*GetHuffmanTable());
+        binaryOutputArchive(rootNode);
     }
     int end = encodedFileStream.tellp();
     
@@ -123,3 +122,49 @@ void HuffmanEncodingContext::WriteHeaderDataTo(std::ofstream& encodedFileStream,
     encodedFileStream.seekp(0);
     encodedFileStream.write((char*)headerBuf, headerBufSize);
 }
+
+int HuffmanEncodingContext::WriteEncodedDataTo(std::ofstream& encodedFileStream, int fileOffset){
+    encodedFileStream.seekp(fileOffset);
+    int end = encodedPixelVec.size() - 1;
+    int bits = 0;
+    unsigned char byte = 0;
+    unsigned char bit;
+
+    //BIT MANIPULATOR CLASS
+    for(unsigned int i = 0; i < encodedPixelVec.size(); i++){
+        for(unsigned j = 0; j < encodedPixelVec[i].size(); j++){
+            byte <<= 1;
+            bit = encodedPixelVec[i][j];
+
+            if((bit ^ '1') == 0){ 
+                byte |= 1;
+            }
+
+            bits++;
+            
+
+            if(bits %  8 == 0){
+                WriteByteToFile(encodedFileStream, &byte);
+                byte = 0;
+            }         
+        }
+    }
+
+    unsigned short int padding = 0;
+    if(bits % 8 != 0){
+        while(bits % 8 != 0){
+            bits++;
+            byte <<= 1;
+            padding++;
+        }
+
+        WriteByteToFile(encodedFileStream, &byte);
+    }
+    
+    return padding;
+}
+
+void HuffmanEncodingContext::WriteByteToFile(std::ofstream& encodedFileStream, unsigned char* byteArray){ //RENAMING
+    encodedFileStream.write((char*) byteArray, sizeof(char));
+}
+
