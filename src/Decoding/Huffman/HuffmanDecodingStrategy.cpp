@@ -18,15 +18,13 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
     {
         std::ifstream decodedImageStream = GetDecodedFileStream(currentFile, marshaller); 
         FileHeader* headerData = GetHeaderData(decodedImageStream, headerSize);
-        HuffmanEncoded deserializedHuffmanEncoded = DeserializeFileData(decodedImageStream);
+        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(decodedImageStream);
         
-        int encodedPixelArraySize = deserializedHuffmanEncoded.encodedPixelArraySize; //(headerData->imageSize - headerData->pixelDataOffset);
-        unsigned char* encodedPixelArr = new unsigned char[encodedPixelArraySize];
-        std::cout << "BYTES = " << encodedPixelArraySize << " BITS =" << encodedPixelArraySize*8 << std::endl;
-        decodedImageStream.read((char*) encodedPixelArr, encodedPixelArraySize/8);
-        
-        unsigned char* decodedPixelArray = DecodeNextHuffmanCode(encodedPixelArr, deserializedHuffmanEncoded);
-        
+        int encodedPixelArrayBytes = (headerData->imageSize - headerData->pixelDataOffset); 
+        unsigned char* encodedPixelArr = new unsigned char[encodedPixelArrayBytes];
+        decodedImageStream.read((char*) encodedPixelArr, encodedPixelArrayBytes);
+
+        unsigned char* decodedPixelArray = DecodeNextHuffmanCode(encodedPixelArr, encodedPixelArrayBytes, deserializedRootNode);
         TestDecoding(decodedPixelArray, headerData->imageWidth, headerData->imageHeight);
     }
 }
@@ -44,53 +42,49 @@ FileHeader* HuffmanDecodingStrategy::GetHeaderData(std::ifstream& decodedImageSt
     return headerInfo;
 }
 
-HuffmanEncoded HuffmanDecodingStrategy::DeserializeFileData(std::ifstream& encodedFileStream){
-    HuffmanEncoded tmpHuffEncoded;
+std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(std::ifstream& encodedFileStream){
+    std::shared_ptr<HuffmanTreeNode> tmpRoot;
     {
         cereal::BinaryInputArchive binaryInputArchive(encodedFileStream);
-        binaryInputArchive(tmpHuffEncoded);
+        binaryInputArchive(tmpRoot);
     }
-    return tmpHuffEncoded;
+    return tmpRoot;
 }
 
-unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* encodedPixelArray, HuffmanEncoded huffEncoded){
-    
-    std::shared_ptr<HuffmanTreeNode> currentNode = huffEncoded.rootNode;
+unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* encodedPixelArray, int encodedPixelArrayBytes,  std::shared_ptr<HuffmanTreeNode> rootNode){
+    std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
     std::vector<unsigned char> decodedPixelArr;
 
+    int encodedPixelArrayBits = (encodedPixelArrayBytes*8);
     int byteIndex = 0;
     int bitIndex = 0;
     int bits = 0;
-    std::string nextCodeByte = std::bitset<8>(encodedPixelArray[byteIndex++]).to_string();
-    std::string code;
-    //Bit Manipulator // Bit shifting optimization
-    while(bits < huffEncoded.encodedPixelArraySize-7){
+
+    unsigned char currentByte = encodedPixelArray[byteIndex++];
+    int nextCode;
+    int msb;
+    //Bit Manipulator
+    while(bits < encodedPixelArrayBits){
         if(bitIndex >= 8){
-            nextCodeByte = std::bitset<8>(encodedPixelArray[byteIndex++]).to_string();
+            currentByte = encodedPixelArray[byteIndex++];
             bitIndex = 0;
         }
 
         if(currentNode->left == nullptr && currentNode->right == nullptr){
-            if(currentNode->pix > 255){
-                std::cout << "AT " << byteIndex << "CODE = " << code <<  " and PIX = " << currentNode->pix << std::endl;
-            }
             decodedPixelArr.push_back(currentNode->pix);
-            currentNode = huffEncoded.rootNode;
-            code = "";
+            currentNode = rootNode;
         }
 
-        char nextCode = nextCodeByte[bitIndex++];
-        if(nextCode == '0'){
-            code += '0';
+        msb = 7-bitIndex++;
+        nextCode = (currentByte >> msb) & 1;
+        if((nextCode ^ 0) == 0){
             currentNode = currentNode->left;
         }
         else{
-            code += '1';
             currentNode = currentNode->right;
         }
         bits++;        
     }
-    std::cout << bits << std::endl;
 
     return &decodedPixelArr[0];
 }

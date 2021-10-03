@@ -5,12 +5,11 @@
 #include "../Artifacts/BMPImage.h"
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Artifacts/Huffman/HuffmanTree.h"
-#include "../Artifacts/Huffman/HuffmanTable.h"
 #include "../Artifacts/Huffman/HuffmanTreeNode.h"
-#include "./Huffman/HuffmanEncodingContext.h"
-#include <assert.h>
 #include <queue>
 #include <algorithm>
+#include <assert.h>
+
 
 class ContextBuildHelper{
     public:
@@ -236,7 +235,7 @@ class ContextBuildHelper{
             return encodedPixelVec;
         }
 
-        static int GetEncodedPixelDataSize(std::vector<std::string> encodedPixelVec){
+        static int GetEncodedPixelDataSizeInBits(std::vector<std::string> encodedPixelVec){
             int s = 0;
             for(int i = 0; i < encodedPixelVec.size(); i++){
                 s += encodedPixelVec[i].size();
@@ -246,23 +245,8 @@ class ContextBuildHelper{
         }
 
         static std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, HuffmanTree* tree, int totalNodes){
-            std::vector<PixelFrequencies> test;
-            for(unsigned i = 0; i < totalNodes; i++){
-                std::cout << i << std::endl;
-                test.push_back(pixFreqs[i]);
-
-            }
-            std::sort(test.begin(), test.end(), Compare);
-            pixFreqs = &test[0];
-            for(int i = 0; i < totalNodes; i++){
-                std::cout << i << " NODE " << pixFreqs[i].pix << " FREQ " << pixFreqs[i].freq << std::endl;
-                if(pixFreqs[i].left != nullptr){
-                    std::cout << i << " LEFT CHILD " << pixFreqs[i].left->pix << " FREQ " << pixFreqs[i].left->freq << std::endl;
-                }
-                if(pixFreqs[i].right != nullptr){
-                    std::cout << i << " LEFT RIGHT " << pixFreqs[i].right->pix << " FREQ " << pixFreqs[i].right->freq << std::endl;
-                }
-            }
+            std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
+            pixFreqs = &sortedPixelFreqVec[0];
             
             std::queue<std::shared_ptr<HuffmanTreeNode>> q;
             int node = 0;
@@ -276,39 +260,50 @@ class ContextBuildHelper{
                 pixFreqNode = pixFreqs[node];
                 currentNode = q.front();
                 q.pop();
-                std::cout << "NODE: " << node << " PIX=" << currentNode->pix << " : " << currentNode->code << " - " << currentNode->freq << std::endl;
-                std::cout << "PIXFREQ:" << node << " PIX=" << pixFreqNode.pix << " : " << pixFreqNode.code << " - " << pixFreqNode.freq << std::endl;
-                if(currentNode->pix != pixFreqNode.pix){ // This is rife w/ potential for bugs
-                    PixelFrequencies tmp = pixFreqNode;
-                    pixFreqNode = pixFreqs[node+1];
-                    pixFreqs[node+1] = tmp;
-                     //Gotta clean this shit up
-                    std::cout << "SWAPPING " << tmp.pix << " & " << pixFreqNode.pix << std::endl;
-                    std::cout << "NEW SETUP:\n\n" ;
-                    std::cout << "NODE: " << node << " PIX=" << currentNode->pix << " : " << currentNode->code << " - " << currentNode->freq << std::endl;
-                    std::cout << "PIXFREQ:" << node << " PIX=" << pixFreqNode.pix << " : " << pixFreqNode.code << " - " << pixFreqNode.freq << std::endl;
+            
+                if(currentNode->pix != pixFreqNode.pix){ 
+                    assert(node < totalNodes - 2);
+                    SwapChildNodes(node, pixFreqNode, pixFreqs);
                 }
 
                 if(pixFreqNode.left != nullptr){
                     currentNode->left = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.left));
-                    std::cout << "NODE LEFT " << currentNode->left->code << std::endl;
                     q.push(currentNode->left);
                 }
                 if(pixFreqNode.right != nullptr){
                     currentNode->right = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.right));
-                    std::cout << "NODE RIGHT " << currentNode->right->code << std::endl;
                     q.push(currentNode->right);
                 }
                 node++;
-                std::cout << std::endl;
             }
-            std::cout << "REM = " << q.size() << std::endl;
+
             return root;       
 
         }
     private:
-        static bool Compare(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
+        static bool CompareFrequencies(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
             return lhs.freq > rhs.freq;
+        }
+
+        static std::vector<PixelFrequencies> SortPixFrequencies(int totalNodes, PixelFrequencies* pixFreqs){
+            std::vector<PixelFrequencies> tmp;
+            for(unsigned i = 0; i < totalNodes; i++){
+                tmp.push_back(pixFreqs[i]);
+            }
+            std::sort(tmp.begin(), tmp.end(), CompareFrequencies);
+
+            return tmp;
+        }
+
+        /* 
+        When two nodes in the tree have the same frequency, their ordering between the PixFreqs array and
+        the BFS-based tree can be swapped (left node in one  == right node in the other).
+        This happens more frequently with nodes deeper in the tree.
+        */
+        static void SwapChildNodes(int node, PixelFrequencies& currentPixFreqNode, PixelFrequencies* pixFreqs){
+            PixelFrequencies tmp = currentPixFreqNode;
+            currentPixFreqNode = pixFreqs[node+1];
+            pixFreqs[node+1] = tmp;
         }
 };
 
