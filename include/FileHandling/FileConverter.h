@@ -11,6 +11,7 @@ class FileConverter{
     public:
         static FileConverter& instance();
         void ConvertFileToBMP(File& file);
+        void ConvertFileToTIFF(File& file);
     protected:
         FileConverter();
     private:

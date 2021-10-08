@@ -16,6 +16,10 @@ void FileMarshaller::ConvertFileToBMP(File& file){
     FileConverter::instance().ConvertFileToBMP(file);
 }
 
+void FileMarshaller::ConvertFileToTIFF(File& file){
+    FileConverter::instance().ConvertFileToTIFF(file);
+}
+
 void FileMarshaller::UpdateFilePath(std::string newPath, File& file){
     file.relativePath = newPath;
     file.fullPath = newPath + "/" + file.name + "." + file.ext;

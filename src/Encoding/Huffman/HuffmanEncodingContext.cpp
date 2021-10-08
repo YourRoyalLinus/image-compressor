@@ -85,6 +85,7 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
 
         int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
 
+        GetBMPImage()->header->reservedByteOne = currentFile.type;
         GetBMPImage()->header->compression = 3;
         GetBMPImage()->header->pixelDataOffset = pixelDataOffset;
         GetBMPImage()->header->imageSize = encodedFileSize;
@@ -102,7 +103,7 @@ void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshalle
 
 //MOVED OUT PROB
 std::ofstream HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
-    std::string encodedFilePath = currentFile.relativePath + "/" + currentFile.name + "_encoded.bin";
+    std::string encodedFilePath = currentFile.relativePath + "/" + currentFile.name + ".jcif";
     //CHANGE FILE TO ENCODED FILE PATH
     return marshaller.CreateOutfileStream(encodedFilePath, std::ofstream::binary);
 }
