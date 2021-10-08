@@ -1,9 +1,6 @@
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
-#include "CImg/CImg-2.9.8_pre051821/CImg.h"
 #include <fstream>
-#include <vector>
 #include <ios>
-#include <bitset>
 
 HuffmanDecodingStrategy::HuffmanDecodingStrategy(){
 }
@@ -18,14 +15,17 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
     {
         std::ifstream decodedImageStream = GetDecodedFileStream(currentFile, marshaller); 
         FileHeader* headerData = GetHeaderData(decodedImageStream, headerSize);
+        File::FileType originalFileType = (File::FileType) headerData->reservedByteOne;
+
         std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(decodedImageStream);
         
         int encodedPixelArrayBytes = (headerData->imageSize - headerData->pixelDataOffset); 
         unsigned char* encodedPixelArr = new unsigned char[encodedPixelArrayBytes];
         decodedImageStream.read((char*) encodedPixelArr, encodedPixelArrayBytes);
 
-        unsigned char* decodedPixelArray = DecodeNextHuffmanCode(encodedPixelArr, encodedPixelArrayBytes, deserializedRootNode);
-        TestDecoding(decodedPixelArray, headerData->imageWidth, headerData->imageHeight);
+        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(encodedPixelArr, encodedPixelArrayBytes, deserializedRootNode);
+        cimg_library::CImg<unsigned char> rawImg = CreateDecodedImage(decodedPixelVec, *headerData, currentFile);
+        CreateImageFile(rawImg, currentFile, marshaller, originalFileType);
     }
 }
 
@@ -51,9 +51,9 @@ std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(st
     return tmpRoot;
 }
 
-unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* encodedPixelArray, int encodedPixelArrayBytes,  std::shared_ptr<HuffmanTreeNode> rootNode){
+std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned char* encodedPixelArray, int encodedPixelArrayBytes, std::shared_ptr<HuffmanTreeNode> rootNode){
     std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
-    std::vector<unsigned char> decodedPixelArr;
+    std::vector<unsigned char> decodedPixelVec;
 
     int encodedPixelArrayBits = (encodedPixelArrayBytes*8);
     int byteIndex = 0;
@@ -71,7 +71,7 @@ unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* enc
         }
 
         if(currentNode->left == nullptr && currentNode->right == nullptr){
-            decodedPixelArr.push_back(currentNode->pix);
+            decodedPixelVec.push_back(currentNode->pix);
             currentNode = rootNode;
         }
 
@@ -86,9 +86,30 @@ unsigned char* HuffmanDecodingStrategy::DecodeNextHuffmanCode(unsigned char* enc
         bits++;        
     }
 
-    return &decodedPixelArr[0];
+    return decodedPixelVec;
 }
-void HuffmanDecodingStrategy::TestDecoding(unsigned char* pixelArr, int width, int height){
-    cimg_library::CImg<unsigned char> newImage(pixelArr, width, height, 1, 3);
-    newImage.save_bmp("/home/jon/ImageCompressor/test_decoding_refactored.bmp");
+
+cimg_library::CImg<unsigned char> HuffmanDecodingStrategy::CreateDecodedImage(std::vector<unsigned char>& decodedPixelVec, FileHeader& headerData, File& currentFile){
+    unsigned char* pixelArr = &decodedPixelVec[0];
+    cimg_library::CImg<unsigned char> newImage(pixelArr, headerData.imageWidth, headerData.imageHeight, 1, 3); 
+    return newImage;
 }   
+
+void HuffmanDecodingStrategy::CreateImageFile(cimg_library::CImg<unsigned char> img, File& currentFile, FileMarshaller& marshaller, File::FileType originalFileType){ //File cleanup on marshaller
+    switch(originalFileType){
+        case File::FileType::BMP:
+            currentFile.fullPath =  currentFile.relativePath + "/" + currentFile.name +".bmp";
+            currentFile.type = File::FileType::BMP;
+            currentFile.ext = "bmp";
+             
+            img.save_bmp(currentFile.fullPath.c_str());
+            break;
+        case File::FileType::TIFF:
+            currentFile.fullPath =  currentFile.relativePath + "/" + currentFile.name +".tiff";
+            currentFile.type = File::FileType::TIFF;
+            currentFile.ext = "tiff";
+
+            img.save_tiff(currentFile.fullPath.c_str());
+            break;
+    }
+}

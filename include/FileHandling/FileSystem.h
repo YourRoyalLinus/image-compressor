@@ -9,7 +9,7 @@ class FileSystem{
     public:
         static FileSystem& instance();
         
-        std::string CreatePath(const std::string& srcPath, const std::string& destPath);
+        std::string CreatePath(const std::string& srcPath, const std::string& destPath); //need exits on fail opens
         std::string FindUserPath();
         std::ofstream CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode);
         std::ifstream CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode);
@@ -19,8 +19,8 @@ class FileSystem{
         bool DoesPathExist(const std::string& filePath);
         bool IsValidFileType(std::string fileExt);
 
-        inline static std::string validFileTypes[3] = { "bmp", "tif", "tiff" };
-        static const unsigned int countOfValidFileTypes = 3;
+        inline static std::string validFileTypes[4] = { "bmp", "tif", "tiff", "jcif" };
+        static const unsigned int countOfValidFileTypes = 4;
     protected:
         FileSystem();
 };
