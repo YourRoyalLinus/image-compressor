@@ -8,6 +8,7 @@ class File{
         enum FileType{
             BMP,
             TIFF,
+            JCIF
         };
 
         File(std::string filePath){
@@ -15,6 +16,7 @@ class File{
         }
 
         long size;
+        bool isEncoded;
         std::string fullPath;
         std::string relativePath;
         std::string name;

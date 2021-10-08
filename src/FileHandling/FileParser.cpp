@@ -1,4 +1,5 @@
 #include "../../include/FileHandling/FileParser.h"
+#include <algorithm>
 
 FileParser::FileParser(){
 
@@ -43,12 +44,20 @@ void FileParser::GetFileName(File& f, const FileMetadata& fileMetadata){
 void FileParser::GetFileExt(File& f, const FileMetadata& fileMetadata){
     unsigned int numberOfPathComponents = fileMetadata.pathComponents.size();
     f.ext = fileMetadata.pathComponents[numberOfPathComponents-1];
-    GetFileType(f);
 
+    std::transform(f.ext.begin(), f.ext.end(), f.ext.begin(),
+                    [](unsigned char c){ return std::tolower(c); });
+
+    GetFileType(f);
+    IsCompressed(f);
 }
 
 void FileParser::GetFileType(File& f){
     f.type = extTypeMap.find(f.ext)->second;
+}
+
+void FileParser::IsCompressed(File& f){
+    f.isEncoded = (f.type == File::FileType::JCIF);
 }
 
 

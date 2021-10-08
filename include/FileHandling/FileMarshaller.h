@@ -11,6 +11,7 @@ class FileMarshaller{
 
         void ParseFile(File& file);
         void ConvertFileToBMP(File& file);
+        void ConvertFileToTIFF(File& file);
         void UpdateFilePath(std::string newPath, File& file);
 
         long GetFileSize(const File& file);

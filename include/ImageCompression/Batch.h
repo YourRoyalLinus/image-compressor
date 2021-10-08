@@ -13,7 +13,7 @@ class Batch{
         void SetActiveItem(std::string item);
         void ExecuteStart();
         void ExecuteEnd();
-        void RecordExecutionResults(long startSize, long compressedSize);
+        void RecordExecutionResults(long startSize, long compressedSize, bool wasDecoded);
         
         void ItemSuccessfullyProcessed(bool status);
         int CheckBatchStatus();

@@ -1,13 +1,15 @@
 #ifndef CONTEXTBUILDHELPER_H
 #define CONTEXTBUILDHELPER_H
 
-#include "./Huffman/HuffmanEncodingContext.h"
 #include "../Utils/Utils.h"
 #include "../Artifacts/BMPImage.h"
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Artifacts/Huffman/HuffmanTree.h"
-#include "../Artifacts/Huffman/HuffmanTable.h"
+#include "../Artifacts/Huffman/HuffmanTreeNode.h"
+#include <queue>
+#include <algorithm>
 #include <assert.h>
+
 
 class ContextBuildHelper{
     public:
@@ -206,42 +208,102 @@ class ContextBuildHelper{
             } 
         }
 
-        static HuffmanTable* CreateHuffmanTable(int nonZeroNodes, PixelFrequencies* pixFreqs){
-            HuffmanTable* ht = new HuffmanTable();
-            std::unordered_map<std::string, int> temp;
-            for(unsigned pixelValue = 0; pixelValue < 256; pixelValue++){
-                for(unsigned k = 0; k < nonZeroNodes; k++){
+        static std::unordered_map<int, std::string> CreateEncodingMap(int nonZeroNodes, PixelFrequencies* pixFreqs){
+            std::unordered_map<int, std::string> temp;
+            for(int pixelValue = 0; pixelValue < 256; pixelValue++){
+                for(int k = 0; k < nonZeroNodes; k++){
                     if(pixelValue == pixFreqs[k].pix){
                         assert(pixFreqs[k].code != nullptr);
                         std::string c = pixFreqs[k].code;
-                        temp[c] = pixelValue;
+                        temp[pixelValue] = c;
                         break;
                     }
                 }
             }
 
-            ht->table = temp;
-
-            return ht;
+            return temp;
         }
 
-        static void PopulateCodeLengths(int nonZeroNodes, int imageSize, unsigned char* pixelDataArray, PixelFrequencies* pixFreqs, HuffmanTable* huffTable){
+        static std::vector<std::string> CreateEncodedPixelVec(std::unordered_map<int, std::string> encodingMap,  int pixelDataArraySize, unsigned char* pixelDataArray) {
             int pixVal = 0;
-             for(unsigned i = 0; i < imageSize; i++){
+            std::vector<std::string> encodedPixelVec;
+            for(int i = 0; i < pixelDataArraySize; i++){
                 pixVal = *(pixelDataArray+i);
-                for(unsigned k = 0; k < nonZeroNodes; k++){
-                    if(pixVal == pixFreqs[k].pix){
-                        InsertCodeLengths(k, pixFreqs, huffTable); 
-                    }
-                }
+                encodedPixelVec.push_back(encodingMap[pixVal]);                
+            }
+
+            return encodedPixelVec;
+        }
+
+        static int GetEncodedPixelDataSizeInBits(std::vector<std::string> encodedPixelVec){
+            int s = 0;
+            for(int i = 0; i < encodedPixelVec.size(); i++){
+                s += encodedPixelVec[i].size();
             }
             
+            return s;
+        }
+
+        static std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, HuffmanTree* tree, int totalNodes){
+            std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
+            pixFreqs = &sortedPixelFreqVec[0];
+            
+            std::queue<std::shared_ptr<HuffmanTreeNode>> q;
+            int node = 0;
+
+            PixelFrequencies pixFreqNode;
+            std::shared_ptr<HuffmanTreeNode> root = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(pixFreqs[node]));
+            std::shared_ptr<HuffmanTreeNode> currentNode = root;
+            
+            q.push(root);
+            while(node < totalNodes){
+                pixFreqNode = pixFreqs[node];
+                currentNode = q.front();
+                q.pop();
+            
+                if(currentNode->pix != pixFreqNode.pix){ 
+                    assert(node < totalNodes - 2);
+                    SwapChildNodes(node, pixFreqNode, pixFreqs);
+                }
+
+                if(pixFreqNode.left != nullptr){
+                    currentNode->left = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.left));
+                    q.push(currentNode->left);
+                }
+                if(pixFreqNode.right != nullptr){
+                    currentNode->right = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.right));
+                    q.push(currentNode->right);
+                }
+                node++;
+            }
+
+            return root;       
+
         }
     private:
-        static void InsertCodeLengths(int node, PixelFrequencies* pixFreqs, HuffmanTable* huffTable){
-            unsigned short int codeSize = strlen(pixFreqs[node].code);
-            huffTable->codeLengths.push_back(codeSize);
-            huffTable->codes.push_back(pixFreqs[node].code);
+        static bool CompareFrequencies(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
+            return lhs.freq > rhs.freq;
+        }
+
+        static std::vector<PixelFrequencies> SortPixFrequencies(int totalNodes, PixelFrequencies* pixFreqs){
+            std::vector<PixelFrequencies> tmp;
+            for(unsigned i = 0; i < totalNodes; i++){
+                tmp.push_back(pixFreqs[i]);
+            }
+            std::sort(tmp.begin(), tmp.end(), CompareFrequencies);
+
+            return tmp;
+        }
+
+        /* 
+        When two nodes in the tree have the same frequency, their ordering between the PixFreqs array and
+        the BFS-based tree can be swapped (left node in one  == right node in the other).
+        This happens more frequently with nodes deeper in the tree.
+        */
+        static void SwapChildNodes(int node, PixelFrequencies& currentPixFreqNode, PixelFrequencies* pixFreqs){
+            PixelFrequencies tmp = currentPixFreqNode;
+            currentPixFreqNode = pixFreqs[node+1];
+            pixFreqs[node+1] = tmp;
         }
 };
 

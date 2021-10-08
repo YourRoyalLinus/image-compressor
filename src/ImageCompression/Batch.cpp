@@ -17,13 +17,15 @@ void Batch::ExecuteEnd(){
      executeEnd = std::chrono::system_clock::now();
 }
 
-void Batch::RecordExecutionResults(long startSize, long compressedSize){
+void Batch::RecordExecutionResults(long startSize, long compressedSize, bool wasDecoded){
+    std::string operation = (wasDecoded == true ? "Decoded" : "Encoded");
+
     std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::minutes>(executeEnd-executeStart).count() << ":" 
                                     << std::chrono::duration_cast<std::chrono::seconds>(executeEnd-executeStart).count() << ":"
                                     << std::chrono::duration_cast<std::chrono::milliseconds>(executeEnd-executeStart).count() 
-                                    << "s| " 
-    << activeItem << " | " << "Initial File Size: " << startSize << " B | " 
-    << "Encoded Image Size: " << compressedSize<< " B | " << std::endl;
+                                    << "s | " 
+    << activeItem << " | " << operation << " | " "Initial File Size: " << startSize << " B | " 
+    << "New File Size: " << compressedSize<< " B | " << std::endl;
 }
 
 void Batch::ItemSuccessfullyProcessed(bool status){

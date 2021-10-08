@@ -21,9 +21,9 @@ class FileParser{
         void GetFileName(File& file,  const FileMetadata& FileMetadata);
         void GetFileExt(File& file,  const FileMetadata& FileMetadata);
         void GetFileType(File& file);
+        void IsCompressed(File& file);
 
-
-        inline static std::unordered_map<std::string, File::FileType> extTypeMap = { {"bmp", File::FileType::BMP}, {"tif", File::FileType::TIFF}, {"tiff", File::FileType::TIFF} };
+        inline static std::unordered_map<std::string, File::FileType> extTypeMap = { {"bmp", File::FileType::BMP}, {"tif", File::FileType::TIFF}, {"tiff", File::FileType::TIFF}, {"jcif", File::FileType::JCIF} };
         
 };
 
