@@ -52,6 +52,7 @@ install-imagemagick-packages:
  
 	@if ! dpkg -l | grep build-essential -c -q; then sudo apt-get -y install > /dev/null build-essential ; fi 
 	@if ! dpkg -l | grep libtiff-dev -c -q; then sudo apt-get -y install > /dev/null libtiff-dev; fi 	
+	@if ! dpkg -l | grep libx11-dev -c -q; then sudo apt-get -y install > /dev/null libx11-dev; fi
 
 	@echo Installation Complete!
 
