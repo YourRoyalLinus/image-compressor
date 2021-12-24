@@ -86,6 +86,7 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
         int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
 
         GetBMPImage()->header->reservedByteOne = currentFile.type;
+        GetBMPImage()->header->reservedByteTwo = static_cast<unsigned short>(bitPadding);
         GetBMPImage()->header->compression = 3;
         GetBMPImage()->header->pixelDataOffset = pixelDataOffset;
         GetBMPImage()->header->imageSize = encodedFileSize;

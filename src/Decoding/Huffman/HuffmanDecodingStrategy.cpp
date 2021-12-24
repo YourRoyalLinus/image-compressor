@@ -16,6 +16,7 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
         std::ifstream decodedImageStream = GetDecodedFileStream(currentFile, marshaller); 
         FileHeader* headerData = GetHeaderData(decodedImageStream, headerSize);
         File::FileType originalFileType = (File::FileType) headerData->reservedByteOne;
+        unsigned int compressedPaddingBits = headerData->reservedByteTwo;
 
         std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(decodedImageStream);
         
@@ -23,7 +24,7 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
         unsigned char* encodedPixelArr = new unsigned char[encodedPixelArrayBytes];
         decodedImageStream.read((char*) encodedPixelArr, encodedPixelArrayBytes);
 
-        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(encodedPixelArr, encodedPixelArrayBytes, deserializedRootNode);
+        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(encodedPixelArr, encodedPixelArrayBytes, compressedPaddingBits, deserializedRootNode);
         cimg_library::CImg<unsigned char> rawImg = CreateDecodedImage(decodedPixelVec, *headerData, currentFile);
         CreateImageFile(rawImg, currentFile, marshaller, originalFileType);
     }
@@ -51,11 +52,11 @@ std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(st
     return tmpRoot;
 }
 
-std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned char* encodedPixelArray, int encodedPixelArrayBytes, std::shared_ptr<HuffmanTreeNode> rootNode){
+std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned char* encodedPixelArray, int encodedPixelArrayBytes, int compressedPaddingBits, std::shared_ptr<HuffmanTreeNode> rootNode){
     std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
     std::vector<unsigned char> decodedPixelVec;
 
-    int encodedPixelArrayBits = (encodedPixelArrayBytes*8);
+    int encodedPixelArrayBits = (encodedPixelArrayBytes*8) - compressedPaddingBits;
     int byteIndex = 0;
     int bitIndex = 0;
     int bits = 0;
