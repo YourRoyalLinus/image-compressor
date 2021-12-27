@@ -3,7 +3,7 @@
 
 #include "../DecodingStrategy.h"
 #include "../../Artifacts/Huffman/HuffmanTreeNode.h"
-#include "CImg/CImg-2.9.8_pre051821/CImg.h"
+#include "../../../lib/CImg-2.9.9/CImg.h"
 #include <vector>
 
 class HuffmanDecodingStrategy : public DecodingStrategy{

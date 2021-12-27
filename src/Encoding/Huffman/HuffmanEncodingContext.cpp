@@ -1,3 +1,5 @@
+#include "../../../include/Encoding/ContextBuildHelper.h"
+#include "../../../include/Encoding/HuffmanContextBuildHelper.h"
 #include "../../../include/Encoding/Huffman/HuffmanEncodingContext.h"
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
 #include <cstdio>
@@ -5,22 +7,13 @@
 #include <algorithm>
 
 HuffmanEncodingContext::HuffmanEncodingContext(const char* filePath){
-    decodingStrategy = new HuffmanDecodingStrategy();
+    decodingStrategy = std::unique_ptr<HuffmanDecodingStrategy>(new HuffmanDecodingStrategy());
     contextFilePath = filePath;
 }
 
-HuffmanEncodingContext::HuffmanEncodingContext(File& f){ //NEW
-    decodingStrategy = new HuffmanDecodingStrategy();
+HuffmanEncodingContext::HuffmanEncodingContext(File& f){
+    decodingStrategy = std::unique_ptr<HuffmanDecodingStrategy>(new HuffmanDecodingStrategy());
     contextFilePath = f.fullPath.c_str();
-}
-
-HuffmanEncodingContext::~HuffmanEncodingContext(){
-}
-
-HuffmanTree* HuffmanEncodingContext::GetHuffmanTree(){
-    Artifact* ptr = Context::GetArtifact(Artifact::ArtifactType::HUFFMANTREE);
-    HuffmanTree* ht = dynamic_cast<HuffmanTree*>(ptr);
-    return ht;
 }
 
 void HuffmanEncodingContext::Build(){
@@ -29,7 +22,7 @@ void HuffmanEncodingContext::Build(){
 }
 
 void HuffmanEncodingContext::BuildHuffmanContext(){
-    BMPImage* img = EncodingContext::GetBMPImage();
+    std::shared_ptr<BMPImage> img = EncodingContext::GetBMPImage();
 
     int pixelBufferSize = img->cimage.size();
     int imageWidth = img->header->imageWidth;
@@ -39,30 +32,27 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     HuffmanTree* huffmanTree = 0;
     PixelFrequencies* pixFreqs = 0; 
 
-    int* hist = ContextBuildHelper::GetHistogram(pixelBufferSize, pixelDataArray);
-    int nonZeroNodes = ContextBuildHelper::GetNonZeroOccurances(hist);
-    float probability = ContextBuildHelper::GetMinimumProbabilityOfOccurance(hist, imageWidth, imageHeight);
-    int totalNodes = ContextBuildHelper::GetTotalNodes(nonZeroNodes);
-    int maxCodeLength = ContextBuildHelper::GetMaxCodeLength(probability);
+    std::vector<int> hist = ContextBuilder::GetHistogram(pixelBufferSize, pixelDataArray);
+    int nonZeroNodes = ContextBuilder::GetNonZeroOccurances(hist);
+    float probability = ContextBuilder::GetMinimumProbabilityOfOccurance(hist, imageWidth, imageHeight);
+    int totalNodes = ContextBuilder::GetTotalNodes(nonZeroNodes);
+    int maxCodeLength = ContextBuilder::GetMaxCodeLength(probability);
 
-    pixFreqs = ContextBuildHelper::InitializePixelFrequencies(totalNodes, maxCodeLength);
-    huffmanTree = ContextBuildHelper::InitializeHuffmanTree(nonZeroNodes);
+    pixFreqs = ContextBuilder::InitializePixelFrequencies(totalNodes, maxCodeLength);
+    huffmanTree = ContextBuilder::InitializeHuffmanTree(nonZeroNodes);
 
-    ContextBuildHelper::InitializeLeafNodes(hist, (imageWidth * imageHeight), pixFreqs, huffmanTree);
-    ContextBuildHelper::SortHuffCodeArray(nonZeroNodes, huffmanTree);
-    ContextBuildHelper::CreateHuffmanTree(nonZeroNodes, pixFreqs, huffmanTree);
-    ContextBuildHelper::Backtrack(nonZeroNodes, totalNodes, pixFreqs);
+    ContextBuilder::InitializeLeafNodes(hist, (imageWidth * imageHeight), pixFreqs, huffmanTree);
+    ContextBuilder::SortHuffCodeArray(nonZeroNodes, huffmanTree);
+    ContextBuilder::CreateHuffmanTree(nonZeroNodes, pixFreqs, huffmanTree);
+    ContextBuilder::Backtrack(nonZeroNodes, totalNodes, pixFreqs);
 
-    std::unordered_map<int, std::string> encodingMap = ContextBuildHelper::CreateEncodingMap(nonZeroNodes, pixFreqs);
-    encodedPixelVec = ContextBuildHelper::CreateEncodedPixelVec(encodingMap, pixelBufferSize, pixelDataArray);
-    encodedPixelDataBits = ContextBuildHelper::GetEncodedPixelDataSizeInBits(encodedPixelVec);
+    std::unordered_map<int, std::string> encodingMap = ContextBuilder::CreateEncodingMap(nonZeroNodes, pixFreqs);
+    encodedPixelVec = ContextBuilder::CreateEncodedPixelVec(encodingMap, pixelBufferSize, pixelDataArray);
+    encodedPixelDataBits = ContextBuilder::GetEncodedPixelDataSizeInBits(encodedPixelVec);
     
-    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuildHelper::CreateHuffmanTreeNodes(pixFreqs, huffmanTree, totalNodes);
+    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuilder::CreateHuffmanTreeNodes(pixFreqs, huffmanTree, totalNodes);
 
     rootNode = huffmanRootNode;
-
-    Context::AddArtifact(Artifact::ArtifactType::HUFFMANTREE, huffmanTree);
-    Context::AddArtifact(Artifact::ArtifactType::PIXELFREQUENCIES, pixFreqs);
 }
 
 void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
@@ -70,6 +60,8 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
     int pixelDataSize = 0;
     int pixelDataArraySize = 0;
 
+    std::shared_ptr<BMPImage> img = EncodingContext::GetBMPImage();
+    
     int imageSize = GetBMPImage()->cimage.size();
     unsigned char* pixelDataArray = GetBMPImage()->pixelDataArray;
     int imageHeaderSize = GetBMPImage()->header->size;

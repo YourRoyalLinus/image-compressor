@@ -1,12 +1,9 @@
 #ifndef HUFFMANTREE_H
 #define HUFFMANTREE_H
 
-#include "../Artifact.h"
-
-struct HuffmanTree : public Artifact{
+struct HuffmanTree{
     public:
-        HuffmanTree(){
-            type = Artifact::ArtifactType::HUFFMANTREE;
+        virtual ~HuffmanTree(){ //C++ voodoo-warlock magic requires this to be a virtual destructor or there will be large mem leaks
         }
         int pix;
         int arrloc;

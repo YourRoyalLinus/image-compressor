@@ -8,7 +8,7 @@
 #include "../FileHandling/FileMarshaller.h"
 #include "../FileHandling/FileObjects/File.h"
 #include "../ImageHandling/ImageParser.h"
-
+#include <memory>
 
 class DecodingStrategy;
 
@@ -16,24 +16,26 @@ class EncodingContext : public Context{
     public:
         virtual void Encode(File& currentFile, FileMarshaller& marshaller) = 0;
         virtual void Decode(File& currentFile, FileMarshaller& marshaller) = 0;
-        PixelFrequencies* GetPixelFrequencies(){
-            Artifact* ptr = Context::GetArtifact(Artifact::ArtifactType::PIXELFREQUENCIES);
-            PixelFrequencies* pf = dynamic_cast<PixelFrequencies*>(ptr);
+        std::shared_ptr<PixelFrequencies> GetPixelFrequencies(){
             return pf;
         }
-        BMPImage* GetBMPImage(){
-            Artifact* ptr = Context::GetArtifact(Artifact::ArtifactType::BMPIMAGE);
-            BMPImage* img = dynamic_cast<BMPImage*>(ptr);
-            return img;
+        std::shared_ptr<BMPImage>GetBMPImage(){
+            return image;
+        }
+        virtual ~EncodingContext(){
         }
     protected: 
-        DecodingStrategy* decodingStrategy;  
+        std::unique_ptr<DecodingStrategy> decodingStrategy;
+        std::shared_ptr<PixelFrequencies> pf;
+        std::shared_ptr<BMPImage> image;
+
         void BuildImage(){
-            BMPImage* img = new BMPImage(contextFilePath);
-            ImageParser::instance().ParseImage(*img); 
-            AddArtifact(Artifact::ArtifactType::BMPIMAGE, img);
+            image = std::shared_ptr<BMPImage>(new BMPImage(contextFilePath));
+            ImageParser::instance().ParseImage(*image.get()); 
         }
         EncodingContext(){ }
+        
+
         
 };
 

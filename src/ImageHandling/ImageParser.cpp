@@ -30,7 +30,7 @@ void ImageParser::FetchFileHeaderData(BMPImage& img){
         fileStream.readsome((char*)headerBuffer, headerSize);
     }
 
-    img.header = new FileHeader(headerBuffer);
+    img.header = std::unique_ptr<FileHeader>(new FileHeader(headerBuffer));
 }
 
 

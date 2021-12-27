@@ -1,21 +1,18 @@
 #ifndef HUFFMANENCODINGCONTEXT_H
 #define HUFFMANENCODINGCONTEXT_H
 
-#include "../ContextBuildHelper.h"
 #include "../EncodingContext.h"
-#include "../../Artifacts//Huffman/HuffmanTree.h"
+#include "../../Artifacts//Huffman/HuffmanTreeNode.h"
 #include <vector>
 #include <string>
 
 class HuffmanEncodingContext : public EncodingContext{
     public:
         HuffmanEncodingContext(const char* filePath);
-        HuffmanEncodingContext(File& f); //NEW
-        ~HuffmanEncodingContext();
+        HuffmanEncodingContext(File& f);
         void Build() override;
         void Encode(File& currentFile, FileMarshaller& marshaller) override;
         void Decode(File& currentFile, FileMarshaller& marshaller) override;
-        HuffmanTree* GetHuffmanTree();
 
     private:
         std::shared_ptr<HuffmanTreeNode> rootNode;
