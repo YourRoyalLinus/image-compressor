@@ -16,7 +16,7 @@ void ImageParser::ParseImage(BMPImage& img){
 }
 
 void ImageParser::FetchFileHeaderData(BMPImage& img){
-    unsigned int headerSize = 54;
+    const unsigned int headerSize = 54;
     unsigned char headerBuffer[headerSize];
 
     
