@@ -2,6 +2,7 @@
 #define FILEMARSHALLER_H
 
 #include "./FileObjects/File.h"
+#include <memory>
 #include <vector>
 #include <ios>
 
@@ -22,7 +23,7 @@ class FileMarshaller{
         std::string CreatePath(std::string src, std::string path);
         std::string CreateHomePath();
 
-        std::ofstream CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
+        std::shared_ptr<std::ofstream> CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
         std::ifstream CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
 
         bool DoesPathExist(std::string filePath);

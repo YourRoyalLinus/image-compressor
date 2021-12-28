@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <memory>
 
 //TODO throws errors?
 class FileSystem{
@@ -11,7 +12,7 @@ class FileSystem{
         
         std::string CreatePath(const std::string& srcPath, const std::string& destPath); //need exits on fail opens
         std::string FindUserPath();
-        std::ofstream CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode);
+        std::shared_ptr<std::ofstream> CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode);
         std::ifstream CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode);
         void CopyFileContents(const std::string& srcFile, const std::string& destFile);
         void DeleteFile(const std::string& filePath);

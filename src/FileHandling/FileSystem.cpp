@@ -26,9 +26,9 @@ std::string FileSystem::CreatePath(const std::string& srcPath, const std::string
     return newPath;
 }
 
-std::ofstream FileSystem::CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode){
-    std::ofstream f(filePath, mode);
-    if (!f.is_open())
+std::shared_ptr<std::ofstream>  FileSystem::CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode){
+    std::shared_ptr<std::ofstream> f(new std::ofstream(filePath, mode));
+    if (!f->is_open())
     {
         std::cout << "Error opening file" << filePath << std::endl;
     }

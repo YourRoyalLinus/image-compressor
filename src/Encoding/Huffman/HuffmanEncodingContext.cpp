@@ -1,4 +1,4 @@
-#include "../../../include/Encoding/ContextBuildHelper.h"
+#include "../../../include/Encoding/ContextBuildHelper.h" //As a base for CBHs should this be included in HuffmanCBH?
 #include "../../../include/Encoding/HuffmanContextBuildHelper.h"
 #include "../../../include/Encoding/Huffman/HuffmanEncodingContext.h"
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
@@ -56,36 +56,32 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
 }
 
 void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
-    int pixVal;
-    int pixelDataSize = 0;
-    int pixelDataArraySize = 0;
-
     std::shared_ptr<BMPImage> img = EncodingContext::GetBMPImage();
-
-    int imageSize = img->cimage.size();
-    unsigned char* pixelDataArray = img->pixelDataArray;
     int imageHeaderSize = img->header->size;
 
     {
-        std::ofstream encodedImageStream = GetEncodedFileStream(currentFile, marshaller); 
+        std::shared_ptr<std::ofstream> encodedImageStream = GetEncodedFileStream(currentFile, marshaller); 
 
-        int dhtSerializedSize = SeralizeAndWriteTo(encodedImageStream, imageHeaderSize);
+        int dhtSerializedSize = SeralizeAndWriteTo(*encodedImageStream, imageHeaderSize);
         int pixelDataOffset = imageHeaderSize + dhtSerializedSize;
 
-        int bitPadding = WriteEncodedDataTo(encodedImageStream, pixelDataOffset);
-        encodedPixelDataBits += bitPadding;
+        std::unique_ptr<BinaryWriter> binWriter = std::unique_ptr<BinaryWriter>(new BinaryWriter(encodedImageStream, pixelDataOffset));
+        WriteEncodedDataTo(*binWriter);
 
-        int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
+        this->encodedPixelDataBits += binWriter->GetPadding();
+        int encodedFileSize = imageHeaderSize + dhtSerializedSize + (this->encodedPixelDataBits/8);
 
         img->header->reservedByteOne = currentFile.type;
-        img->header->reservedByteTwo = static_cast<unsigned short>(bitPadding);
+        img->header->reservedByteTwo = binWriter->GetPadding();
         img->header->compression = 3;
         img->header->pixelDataOffset = pixelDataOffset;
         img->header->imageSize = encodedFileSize;
 
-        unsigned char* headerBuffer = img->header->WriteToBuffer();
-        WriteHeaderDataTo(encodedImageStream, headerBuffer, imageHeaderSize);
-        encodedImageStream.flush();
+        
+        binWriter.reset(new BinaryWriter(encodedImageStream, 0));
+        WriteHeaderDataTo(*binWriter, *img);
+        
+        encodedImageStream->flush();
     }
 }
 
@@ -93,7 +89,7 @@ void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshalle
     decodingStrategy->Decode(currentFile, marshaller);
 }
 
-std::ofstream HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
+std::shared_ptr<std::ofstream> HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
     marshaller.FlagFileForCleanUp(currentFile.fullPath);
     marshaller.UpdateFileExt(currentFile, "jcif");
     return marshaller.CreateOutfileStream(currentFile.fullPath, std::ofstream::binary);
@@ -110,53 +106,27 @@ int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream,
     return end - fileOffset;
 }
 
-void HuffmanEncodingContext::WriteHeaderDataTo(std::ofstream& encodedFileStream, unsigned char* headerBuf, int headerBufSize){
-    encodedFileStream.seekp(0);
-    encodedFileStream.write((char*)headerBuf, headerBufSize);
+void HuffmanEncodingContext::WriteHeaderDataTo(BinaryWriter& binWriter, BMPImage& img){
+    unsigned char* headerBuffer = img.header->WriteToBuffer();
+    int imageHeaderSize = img.header->size;
+    unsigned char byte;
+
+    for(unsigned int i = 0; i < imageHeaderSize; i++){
+        byte = headerBuffer[i];
+        binWriter.HandleNextByte(byte);
+    }
 }
 
-int HuffmanEncodingContext::WriteEncodedDataTo(std::ofstream& encodedFileStream, int fileOffset){
-    encodedFileStream.seekp(fileOffset);
-    int end = encodedPixelVec.size() - 1;
-    int bits = 0;
-    unsigned char byte = 0;
-    unsigned char bit;
-
-    //BIT MANIPULATOR CLASS
+void HuffmanEncodingContext::WriteEncodedDataTo(BinaryWriter& binWriter){
+    unsigned char currentBit;
     for(unsigned int i = 0; i < encodedPixelVec.size(); i++){
         for(unsigned j = 0; j < encodedPixelVec[i].size(); j++){
-            byte <<= 1;
-            bit = encodedPixelVec[i][j];
-
-            if((bit ^ '1') == 0){ 
-                byte |= 1;
-            }
-
-            bits++;
-            
-
-            if(bits %  8 == 0){
-                WriteByteToFile(encodedFileStream, &byte);
-                byte = 0;
-            }         
+            currentBit = encodedPixelVec[i][j];
+            binWriter.HandleNextBit(currentBit);
         }
     }
 
-    unsigned short int padding = 0;
-    if(bits % 8 != 0){
-        while(bits % 8 != 0){
-            bits++;
-            byte <<= 1;
-            padding++;
-        }
-
-        WriteByteToFile(encodedFileStream, &byte);
+    if(binWriter.IsPaddingRequired()){
+        binWriter.CalculatePadding();
     }
-    
-    return padding;
 }
-
-void HuffmanEncodingContext::WriteByteToFile(std::ofstream& encodedFileStream, unsigned char* byteArray){ //RENAMING
-    encodedFileStream.write((char*) byteArray, sizeof(char));
-}
-

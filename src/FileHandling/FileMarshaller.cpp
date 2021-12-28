@@ -55,7 +55,7 @@ std::string FileMarshaller::CreateHomePath(){
     return homePath;
 }
 
-std::ofstream FileMarshaller::CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+std::shared_ptr<std::ofstream> FileMarshaller::CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
     return FileSystem::instance().CreateOutfileStream(encodedFilePath, mode);
 }
 
