@@ -59,7 +59,7 @@ std::shared_ptr<std::ofstream> FileMarshaller::CreateOutfileStream(std::string e
     return FileSystem::instance().CreateOutfileStream(encodedFilePath, mode);
 }
 
-std::ifstream FileMarshaller::CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+std::shared_ptr<std::ifstream> FileMarshaller::CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
     return FileSystem::instance().CreateInfileStream(encodedFilePath, mode);
 }
 

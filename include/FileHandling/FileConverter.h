@@ -12,6 +12,8 @@ class FileConverter{
         static FileConverter& instance();
         void ConvertFileToBMP(File& file);
         void ConvertFileToTIFF(File& file);
+        void ConvertImageToBMP(File& file, cimg_library::CImg<unsigned char> img);
+        void ConvertImageToTIFF(File& file, cimg_library::CImg<unsigned char> img);
     protected:
         FileConverter();
     private:

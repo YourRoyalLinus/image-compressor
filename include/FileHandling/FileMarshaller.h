@@ -24,7 +24,7 @@ class FileMarshaller{
         std::string CreateHomePath();
 
         std::shared_ptr<std::ofstream> CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
-        std::ifstream CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
+        std::shared_ptr<std::ifstream> CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
 
         bool DoesPathExist(std::string filePath);
         bool IsValidFileType(std::string fileExt);

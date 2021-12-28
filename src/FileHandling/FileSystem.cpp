@@ -36,9 +36,9 @@ std::shared_ptr<std::ofstream>  FileSystem::CreateOutfileStream(const std::strin
     return f;
 }
 
-std::ifstream FileSystem::CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode){
-    std::ifstream f(filePath, mode);
-    if (!f.is_open())
+std::shared_ptr<std::ifstream>FileSystem::CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode){
+    std::shared_ptr<std::ifstream> f(new std::ifstream(filePath, mode));
+    if (!f->is_open())
     {
         std::cout << "Error opening file" << filePath << std::endl;
     }
