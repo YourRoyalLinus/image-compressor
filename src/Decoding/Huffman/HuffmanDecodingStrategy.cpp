@@ -1,46 +1,32 @@
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
+#include "../../../include/ImageHandling/ImageParser.h"
 #include <fstream>
 #include <ios>
 
-HuffmanDecodingStrategy::HuffmanDecodingStrategy(){
-}
-
-HuffmanDecodingStrategy::~HuffmanDecodingStrategy(){
-
-}
-
 void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshaller){
-    const unsigned int headerSize = 54; //WHO HOLDS THIS
-
+    std::unique_ptr<JCIFImage> encodedImage = std::unique_ptr<JCIFImage>(new JCIFImage(currentFile.fullPath.c_str()));
+    ImageParser::instance().ParseImage(*encodedImage);
     {
-        std::ifstream decodedImageStream = GetDecodedFileStream(currentFile, marshaller); 
-        FileHeader* headerData = GetHeaderData(decodedImageStream, headerSize);
-        File::FileType originalFileType = (File::FileType) headerData->reservedByteOne;
-        unsigned int compressedPaddingBits = headerData->reservedByteTwo;
+        std::ifstream encodedImageStream = GetDecodedFileStream(currentFile, marshaller);
+        AdjustStreamPointer(encodedImageStream, encodedImage->header->size);
 
-        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(decodedImageStream);
+        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(encodedImageStream);
         
-        int encodedPixelArrayBytes = (headerData->imageSize - headerData->pixelDataOffset); 
-        unsigned char* encodedPixelArr = new unsigned char[encodedPixelArrayBytes];
-        decodedImageStream.read((char*) encodedPixelArr, encodedPixelArrayBytes);
+        unsigned char* encodedPixelArray = FetchEncodedPixelArray(*encodedImage, encodedImageStream);
+        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(encodedPixelArray, *encodedImage, deserializedRootNode);
 
-        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(encodedPixelArr, encodedPixelArrayBytes, compressedPaddingBits, deserializedRootNode);
-        cimg_library::CImg<unsigned char> rawImg = CreateDecodedImage(decodedPixelVec, *headerData, currentFile);
-        CreateImageFile(rawImg, currentFile, marshaller, originalFileType);
+        cimg_library::CImg<unsigned char> rawImg = CreateDecodedImage(decodedPixelVec, *encodedImage, currentFile);
+        CreateImageFile(rawImg, currentFile, marshaller, *encodedImage);
     }
+
 }
 
 std::ifstream HuffmanDecodingStrategy::GetDecodedFileStream(File& currentFile, FileMarshaller& marshaller){
     return marshaller.CreateInfileStream(currentFile.fullPath, std::ifstream::binary);
 }
 
-FileHeader* HuffmanDecodingStrategy::GetHeaderData(std::ifstream& decodedImageStream, unsigned int headerSize){
-    unsigned char headerBuffer[headerSize];
-    decodedImageStream.readsome((char*)headerBuffer, headerSize);
-
-    FileHeader* headerInfo = new FileHeader(headerBuffer);
-
-    return headerInfo;
+void HuffmanDecodingStrategy::AdjustStreamPointer(std::ifstream& encodedFileStream, int pointerStart){
+    encodedFileStream.seekg(pointerStart);
 }
 
 std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(std::ifstream& encodedFileStream){
@@ -52,11 +38,21 @@ std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(st
     return tmpRoot;
 }
 
-std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned char* encodedPixelArray, int encodedPixelArrayBytes, int compressedPaddingBits, std::shared_ptr<HuffmanTreeNode> rootNode){
+unsigned char* HuffmanDecodingStrategy::FetchEncodedPixelArray(JCIFImage& encodedImage, std::ifstream& encodedFileStream){
+    unsigned char* encodedPixelArray = new unsigned char[encodedImage.encodedPixelArrayBytes];
+    ReadBytesInto(encodedFileStream, encodedPixelArray, encodedImage.encodedPixelArrayBytes);
+    return encodedPixelArray;
+}
+
+void HuffmanDecodingStrategy::ReadBytesInto(std::ifstream& encodedFileStream, unsigned char* encodedPixelArray, int bytesToRead){
+    encodedFileStream.read((char*) encodedPixelArray, bytesToRead);
+}
+
+std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned char* encodedPixelArray, JCIFImage& encodedImage, std::shared_ptr<HuffmanTreeNode> rootNode){
     std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
     std::vector<unsigned char> decodedPixelVec;
 
-    int encodedPixelArrayBits = (encodedPixelArrayBytes*8) - compressedPaddingBits;
+    int encodedPixelArrayBits = (encodedImage.encodedPixelArrayBytes*8) - encodedImage.bitPadding;
     int byteIndex = 0;
     int bitIndex = 0;
     int bits = 0;
@@ -90,14 +86,14 @@ std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(unsigned ch
     return decodedPixelVec;
 }
 
-cimg_library::CImg<unsigned char> HuffmanDecodingStrategy::CreateDecodedImage(std::vector<unsigned char>& decodedPixelVec, FileHeader& headerData, File& currentFile){
-    unsigned char* pixelArr = &decodedPixelVec[0];
-    cimg_library::CImg<unsigned char> newImage(pixelArr, headerData.imageWidth, headerData.imageHeight, 1, 3); 
+cimg_library::CImg<unsigned char> HuffmanDecodingStrategy::CreateDecodedImage(std::vector<unsigned char>& decodedPixelVec, JCIFImage& encodedImage, File& currentFile){
+    cimg_library::CImg<unsigned char> newImage(decodedPixelVec.data(), encodedImage.header->imageWidth, encodedImage.header->imageHeight, 1, 3); 
     return newImage;
 }   
 
-void HuffmanDecodingStrategy::CreateImageFile(cimg_library::CImg<unsigned char> img, File& currentFile, FileMarshaller& marshaller, File::FileType originalFileType){ //File cleanup on marshaller
-    switch(originalFileType){
+void HuffmanDecodingStrategy::CreateImageFile(cimg_library::CImg<unsigned char> img, File& currentFile, FileMarshaller& marshaller, JCIFImage& encodedImage){
+    marshaller.FlagFileForCleanUp(currentFile.fullPath);
+    switch(encodedImage.originalFileType){
         case File::FileType::BMP:
             currentFile.fullPath =  currentFile.relativePath + "/" + currentFile.name +".bmp";
             currentFile.type = File::FileType::BMP;

@@ -2,12 +2,12 @@
 #define ENCODINGCONTEXT_H
 
 #include "./Context.h"
-#include "../Artifacts/BMPImage.h"
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Decoding/DecodingStrategy.h"
 #include "../FileHandling/FileMarshaller.h"
 #include "../FileHandling/FileObjects/File.h"
 #include "../ImageHandling/ImageParser.h"
+#include "../ImageHandling/ImageObjects/BMPImage.h"
 #include <memory>
 
 class DecodingStrategy;

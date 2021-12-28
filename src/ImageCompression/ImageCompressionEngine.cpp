@@ -82,6 +82,8 @@ int ImageCompressionEngine::StartBatchCompression(){ //BREAKUP FURTHER
                 }            
                 
             }
+
+            fileMarshaller->CleanUpTempFiles();
            
         }
         catch(std::pair<std::exception, std::string>& e){

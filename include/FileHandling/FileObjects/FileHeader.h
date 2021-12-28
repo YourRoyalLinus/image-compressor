@@ -8,11 +8,7 @@ struct FileHeader{
             GetFileHeaderData();
             GetInfoHeaderData();
         }
-
-        ~FileHeader(){
-            FreeBufferPtr();
-        }
-
+        
         unsigned char* WriteToBuffer(){
             ClearBuffer(); 
             WriteFileHeaderData();

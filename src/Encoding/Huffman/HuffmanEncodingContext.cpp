@@ -61,10 +61,10 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
     int pixelDataArraySize = 0;
 
     std::shared_ptr<BMPImage> img = EncodingContext::GetBMPImage();
-    
-    int imageSize = GetBMPImage()->cimage.size();
-    unsigned char* pixelDataArray = GetBMPImage()->pixelDataArray;
-    int imageHeaderSize = GetBMPImage()->header->size;
+
+    int imageSize = img->cimage.size();
+    unsigned char* pixelDataArray = img->pixelDataArray;
+    int imageHeaderSize = img->header->size;
 
     {
         std::ofstream encodedImageStream = GetEncodedFileStream(currentFile, marshaller); 
@@ -77,13 +77,13 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
 
         int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
 
-        GetBMPImage()->header->reservedByteOne = currentFile.type;
-        GetBMPImage()->header->reservedByteTwo = static_cast<unsigned short>(bitPadding);
-        GetBMPImage()->header->compression = 3;
-        GetBMPImage()->header->pixelDataOffset = pixelDataOffset;
-        GetBMPImage()->header->imageSize = encodedFileSize;
+        img->header->reservedByteOne = currentFile.type;
+        img->header->reservedByteTwo = static_cast<unsigned short>(bitPadding);
+        img->header->compression = 3;
+        img->header->pixelDataOffset = pixelDataOffset;
+        img->header->imageSize = encodedFileSize;
 
-        unsigned char* headerBuffer = GetBMPImage()->header->WriteToBuffer();
+        unsigned char* headerBuffer = img->header->WriteToBuffer();
         WriteHeaderDataTo(encodedImageStream, headerBuffer, imageHeaderSize);
         encodedImageStream.flush();
     }
@@ -93,12 +93,10 @@ void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshalle
     decodingStrategy->Decode(currentFile, marshaller);
 }
 
-
-//MOVED OUT PROB
 std::ofstream HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
-    std::string encodedFilePath = currentFile.relativePath + "/" + currentFile.name + ".jcif";
-    //CHANGE FILE TO ENCODED FILE PATH
-    return marshaller.CreateOutfileStream(encodedFilePath, std::ofstream::binary);
+    marshaller.FlagFileForCleanUp(currentFile.fullPath);
+    marshaller.UpdateFileExt(currentFile, "jcif");
+    return marshaller.CreateOutfileStream(currentFile.fullPath, std::ofstream::binary);
 }
 
 int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream, unsigned int fileOffset){

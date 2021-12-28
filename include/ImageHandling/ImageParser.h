@@ -1,16 +1,19 @@
 #ifndef IMAGEPARSER_H
 #define IMAGEPARSER_H
 
-#include "../Artifacts/BMPImage.h"
+#include "./ImageObjects/BMPImage.h"
+#include "./ImageObjects/JCIFImage.h"
 
-class ImageParser{ //TODO Base Parser Class/Small refactor
+class ImageParser{
     public:
         static ImageParser& instance();
         void ParseImage(BMPImage& img);
+        void ParseImage(JCIFImage& img);
     protected:
         ImageParser();
     private:
-        void FetchFileHeaderData(BMPImage& img);
+        static const unsigned int headerSize = 54;
+        void FetchFileHeaderData(BaseImage& img);
         void CreateCImage(BMPImage& img);
         void FetchPixelDataArray(BMPImage& img);
 };

@@ -25,6 +25,11 @@ void FileMarshaller::UpdateFilePath(std::string newPath, File& file){
     file.fullPath = newPath + "/" + file.name + "." + file.ext;
 }
 
+void FileMarshaller::UpdateFileExt(File& file, std::string newExt){
+    file.ext = newExt;
+    file.fullPath = file.relativePath + "/" + file.name + "." + file.ext;
+}
+
 long FileMarshaller::GetFileSize(const File& file){
     return FileSystem::instance().GetFileSize(file.fullPath);
 }
@@ -66,38 +71,12 @@ bool FileMarshaller::IsValidFileType(std::string fileExt){
     return FileSystem::instance().IsValidFileType(fileExt);
 }
 
-void FileMarshaller::WriteFileToDisk(File& file){
-    int height = 0;
-    int width = 0;
-    long offset = 0;
-    int fileSize = 0;
-    short int bpp = 0;
-    unsigned char header[54];
-
-    FILE* imgFile = fopen(file.fullPath.c_str(), "rb");
-
-    if (imgFile == nullptr)
-    {
-        //std::cout << "Error opening tmp file" << file.fullPath << std::endl;
-        return;
-    }
-
-    // Reader header data into the header array
-    fread(header, sizeof(unsigned char), 54, imgFile);
-    
-    fileSize = *(int*)&header[2];
-    offset = *(int*)&header[10];
-    width = *(int*)&header[18];
-    height = *(int*)&header[22];
-    bpp = *(int*)&header[28];
-
-    // Move stream pointer to the start of the data 
-    fseek(imgFile, offset, SEEK_SET);
-    int pixelDataSize = fileSize - offset;
-    unsigned char* pixelArray = new unsigned char[pixelDataSize+1];
-    fread(pixelArray, sizeof(unsigned char), pixelDataSize, imgFile);
-    pixelArray[pixelDataSize] = '\0';
-
+void FileMarshaller::FlagFileForCleanUp(std::string filePath){
+    _cleanUpFiles.push_back(filePath);
 }
 
-
+void FileMarshaller::CleanUpTempFiles(){
+    for(auto _filePath : _cleanUpFiles){
+        FileSystem::instance().DeleteFile(_filePath);
+    }
+}

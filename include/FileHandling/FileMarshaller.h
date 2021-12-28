@@ -2,17 +2,19 @@
 #define FILEMARSHALLER_H
 
 #include "./FileObjects/File.h"
+#include <vector>
 #include <ios>
+
 
 class FileMarshaller{
     public:
         File* InitializeFile(std::string filePath);
-        void CleanupFileResources(File& file);
 
         void ParseFile(File& file);
         void ConvertFileToBMP(File& file);
         void ConvertFileToTIFF(File& file);
         void UpdateFilePath(std::string newPath, File& file);
+        void UpdateFileExt(File& file, std::string newExt);
 
         long GetFileSize(const File& file);
 
@@ -25,11 +27,11 @@ class FileMarshaller{
 
         bool DoesPathExist(std::string filePath);
         bool IsValidFileType(std::string fileExt);
-
-        void WriteFileToDisk(File& file); //Poly between Encoded and Decoded Files
-        void ReadFileFromDisk(File& file); //Poly between Encoded and Decoded Files
         
+        void FlagFileForCleanUp(std::string filePath);
         void CleanUpTempFiles();
+    private:
+        std::vector<std::string> _cleanUpFiles;
 };
 
 #endif

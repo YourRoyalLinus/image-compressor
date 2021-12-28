@@ -15,11 +15,16 @@ void ImageParser::ParseImage(BMPImage& img){
     CreateCImage(img);
 }
 
-void ImageParser::FetchFileHeaderData(BMPImage& img){
-    const unsigned int headerSize = 54;
-    unsigned char headerBuffer[headerSize];
+void ImageParser::ParseImage(JCIFImage& img){
+   FetchFileHeaderData(img);
+   img.originalFileType = (File::FileType) img.header->reservedByteOne;
+   img.bitPadding = img.header->reservedByteTwo;
+   img.encodedPixelArrayBytes = img.header->imageSize - img.header->pixelDataOffset;
+}
 
-    
+void ImageParser::FetchFileHeaderData(BaseImage& img){
+    unsigned char headerBuffer[this->headerSize];
+
     {
         std::ifstream fileStream(img.path);
         if(!fileStream.is_open()){
@@ -27,7 +32,7 @@ void ImageParser::FetchFileHeaderData(BMPImage& img){
             return;
         }
         
-        fileStream.readsome((char*)headerBuffer, headerSize);
+        fileStream.readsome((char*)headerBuffer, this->headerSize);
     }
 
     img.header = std::unique_ptr<FileHeader>(new FileHeader(headerBuffer));
