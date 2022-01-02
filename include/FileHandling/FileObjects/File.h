@@ -8,7 +8,8 @@ class File{
         enum FileType{
             BMP,
             TIFF,
-            JCIF
+            JCIF,
+            INVALID
         };
 
         File(std::string filePath){

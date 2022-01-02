@@ -4,6 +4,8 @@
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Artifacts/Huffman/HuffmanTree.h"
 #include "../Artifacts/Huffman/HuffmanTreeNode.h"
+#include <unordered_map>
+#include <vector>
 #include <assert.h>
 #include <queue>
 #include <algorithm>
@@ -11,11 +13,11 @@
 
 namespace ContextBuilder{
     namespace {
-        static bool CompareFrequencies(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
+        bool CompareFrequencies(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
             return lhs.freq > rhs.freq;
         }
 
-        static std::vector<PixelFrequencies> SortPixFrequencies(int totalNodes, PixelFrequencies* pixFreqs){
+        std::vector<PixelFrequencies> SortPixFrequencies(int totalNodes, PixelFrequencies* pixFreqs){
             std::vector<PixelFrequencies> tmp;
             for(unsigned i = 0; i < totalNodes; i++){
                 tmp.push_back(pixFreqs[i]);
@@ -30,15 +32,15 @@ namespace ContextBuilder{
         the BFS-based tree can be swapped (left node in one  == right node in the other).
         This happens more frequently with nodes deeper in the tree.
         */
-        static void SwapChildNodes(int node, PixelFrequencies& currentPixFreqNode, PixelFrequencies* pixFreqs){
+        void SwapChildNodes(int node, PixelFrequencies& currentPixFreqNode, PixelFrequencies* pixFreqs){
             PixelFrequencies tmp = currentPixFreqNode;
             currentPixFreqNode = pixFreqs[node+1];
             pixFreqs[node+1] = tmp;
         }
     }
 
-    static PixelFrequencies* InitializePixelFrequencies(int totalNodes, int maxCodeLength){
-         PixelFrequencies* pf = new PixelFrequencies[totalNodes];
+    PixelFrequencies* InitializePixelFrequencies(int totalNodes, int maxCodeLength){ //rewrite all of this absolute garbage 
+        PixelFrequencies* pf = new PixelFrequencies[totalNodes];
         for(unsigned i = 0; i < totalNodes; i++){
             pf[i] = PixelFrequencies(maxCodeLength);
         }
@@ -46,12 +48,15 @@ namespace ContextBuilder{
         return pf;
     }
 
-    static HuffmanTree* InitializeHuffmanTree(int nonZeroNodes){
+    HuffmanTree* InitializeHuffmanTree(int nonZeroNodes){
         HuffmanTree* ht = new HuffmanTree[nonZeroNodes];
+        for(unsigned i = 0; i < nonZeroNodes; i++){
+            ht[i] = HuffmanTree();
+        }
         return ht;      
     }
 
-    static void InitializeLeafNodes(const std::vector<int>& hist, int totalPixels, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
+    void InitializeLeafNodes(const std::vector<int>& hist, int totalPixels, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
         float tempProb;
         int j = 0;
 
@@ -83,7 +88,7 @@ namespace ContextBuilder{
     }
     
     // Sorting w.r.t probability of occurrence
-    static void SortHuffCodeArray(int nonZeroNodes, HuffmanTree* huffTree){
+    void SortHuffCodeArray(int nonZeroNodes, HuffmanTree* huffTree){
         HuffmanTree tempHuff;
         
         for (int i = 0; i < nonZeroNodes; i++)
@@ -100,7 +105,7 @@ namespace ContextBuilder{
         }
     }
 
-    static void CreateHuffmanTree(int nonZeroNodes, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
+    void CreateHuffmanTree(int nonZeroNodes, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
         float sumProb;
         int sumPix;
         int n = 0;
@@ -140,7 +145,6 @@ namespace ContextBuilder{
                     huffTree[k].arrloc = nextNode;
                 }
                 else if (k > i)
-                
                     // Shifting the nodes below the new node by 1 For inserting the new node at the updated position k
                     huffTree[k] = huffTree[k - 1];
             }
@@ -149,7 +153,7 @@ namespace ContextBuilder{
         }
     }
 
-    static void ConcatCodes(char* str, char* parentCode, char add){
+    void ConcatCodes(char* str, char* parentCode, char add){
         int i = 0;
         while (*(parentCode + i) != '\0'){
             *(str + i) = *(parentCode + i);
@@ -165,37 +169,35 @@ namespace ContextBuilder{
         } 
     }
     
-    static void Backtrack(int nodes, int totalNodes, PixelFrequencies* pixFreqs){
+    void Backtrack(int nodes, int totalNodes, PixelFrequencies* pixFreqs){
         const char left = '0';
         const char right = '1';
 
         for(unsigned i = totalNodes - 1; i >= nodes; i--){
             if(pixFreqs[i].left != nullptr){
-                ConcatCodes(pixFreqs[i].left->code, pixFreqs[i].code, left);
+                ConcatCodes(pixFreqs[i].left->code.get(), pixFreqs[i].code.get(), left);
             }
             if(pixFreqs[i].right != nullptr){
-                ConcatCodes(pixFreqs[i].right->code, pixFreqs[i].code, right);
+                ConcatCodes(pixFreqs[i].right->code.get(), pixFreqs[i].code.get(), right);
             }
         }
     }
 
-    static std::unordered_map<int, std::string> CreateEncodingMap(int nonZeroNodes, PixelFrequencies* pixFreqs){
-        std::unordered_map<int, std::string> temp;
+    std::unordered_map<unsigned short int, std::string> CreateEncodingMap(int nonZeroNodes, PixelFrequencies* pixFreqs){
+        std::unordered_map<unsigned short int, std::string> temp;
         for(int pixelValue = 0; pixelValue < 256; pixelValue++){
             for(int k = 0; k < nonZeroNodes; k++){
                 if(pixelValue == pixFreqs[k].pix){
-                    assert(pixFreqs[k].code != nullptr);
-                    std::string c = pixFreqs[k].code;
+                    std::string c = pixFreqs[k].code.get();
                     temp[pixelValue] = c;
                     break;
                 }
             }
         }
-
         return temp;
     }
 
-    static std::vector<std::string> CreateEncodedPixelVec(std::unordered_map<int, std::string> encodingMap,  int pixelDataArraySize, unsigned char* pixelDataArray) {
+    std::vector<std::string> CreateEncodedPixelVec(std::unordered_map<unsigned short int, std::string> encodingMap,  int pixelDataArraySize, unsigned char* pixelDataArray) {
         int pixVal = 0;
         std::vector<std::string> encodedPixelVec;
         for(int i = 0; i < pixelDataArraySize; i++){
@@ -207,7 +209,7 @@ namespace ContextBuilder{
         return encodedPixelVec;
     }
     
-    static int GetEncodedPixelDataSizeInBits(const std::vector<std::string>& encodedPixelVec){
+    int GetEncodedPixelDataSizeInBits(const std::vector<std::string>& encodedPixelVec){
         int s = 0;
         for(int i = 0; i < encodedPixelVec.size(); i++){
             s += encodedPixelVec[i].size();
@@ -216,8 +218,8 @@ namespace ContextBuilder{
         return s;
     }
 
-    static std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, HuffmanTree* tree, int totalNodes){
-         std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
+    std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, int totalNodes){
+        std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
         pixFreqs = &sortedPixelFreqVec[0];
         
         std::queue<std::shared_ptr<HuffmanTreeNode>> q;

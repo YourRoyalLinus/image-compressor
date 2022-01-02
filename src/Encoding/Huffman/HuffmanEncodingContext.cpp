@@ -46,13 +46,16 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     ContextBuilder::CreateHuffmanTree(nonZeroNodes, pixFreqs, huffmanTree);
     ContextBuilder::Backtrack(nonZeroNodes, totalNodes, pixFreqs);
 
-    std::unordered_map<int, std::string> encodingMap = ContextBuilder::CreateEncodingMap(nonZeroNodes, pixFreqs);
+    std::unordered_map<unsigned short int, std::string> encodingMap = ContextBuilder::CreateEncodingMap(nonZeroNodes, pixFreqs);
     encodedPixelVec = ContextBuilder::CreateEncodedPixelVec(encodingMap, pixelBufferSize, pixelDataArray);
     encodedPixelDataBits = ContextBuilder::GetEncodedPixelDataSizeInBits(encodedPixelVec);
     
-    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuilder::CreateHuffmanTreeNodes(pixFreqs, huffmanTree, totalNodes);
+    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuilder::CreateHuffmanTreeNodes(pixFreqs,totalNodes);
 
     rootNode = huffmanRootNode;
+
+    delete[] pixFreqs;
+    delete[] huffmanTree;
 }
 
 void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
@@ -80,9 +83,9 @@ void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshalle
         
         binWriter.reset(new BinaryWriter(encodedImageStream, 0));
         WriteHeaderDataTo(*binWriter, *img);
-        
-        encodedImageStream->flush();
     }
+
+    currentFile.size = marshaller.GetFileSize(currentFile.fullPath);
 }
 
 void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshaller){

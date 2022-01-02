@@ -5,29 +5,58 @@
 
 }
 
-void Batch::SetActiveItem(std::string item){
-    activeItem = item;
+std::shared_ptr<File> Batch::GetActiveItem(){
+    return activeItem->_file;
 }
 
-void Batch::ExecuteStart(){
-    executeStart = std::chrono::system_clock::now();
+void Batch::SetActiveItem(std::shared_ptr<File> file){
+    if(activeItem == 0){
+        activeItem = std::unique_ptr<BatchItem>(new BatchItem(file));
+    }
+    else{
+        activeItem.reset(new BatchItem(file));
+    }
+    
 }
 
-void Batch::ExecuteEnd(){
-     executeEnd = std::chrono::system_clock::now();
+void Batch::UpdateActiveItemSize(File& file){
+    activeItem->endSize = file.size;
 }
 
-void Batch::RecordExecutionResults(long startSize, long compressedSize, bool wasDecoded){
-    std::string operation = (wasDecoded == true ? "Decoded" : "Encoded");
-
-    std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::minutes>(executeEnd-executeStart).count() << ":" 
-                                    << std::chrono::duration_cast<std::chrono::seconds>(executeEnd-executeStart).count() << ":"
-                                    << std::chrono::duration_cast<std::chrono::milliseconds>(executeEnd-executeStart).count() 
-                                    << "s | " 
-    << activeItem << " | " << operation << " | " "Initial File Size: " << startSize << " B | " 
-    << "New File Size: " << compressedSize<< " B | " << std::endl;
+void Batch::ItemExecuteStart(){
+    activeItem->ExecuteStart();
 }
 
+void Batch::ItemExecuteEnd(){
+    activeItem->ExecuteEnd();
+}
+
+void Batch::RecordExecutionResults(){
+    std::string operation = (activeItem->isEncoded? "Decoded" : "Encoded");
+
+    std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::minutes>(activeItem->executeEndTime - activeItem->executeStartTime).count() << ":" 
+                                    << std::chrono::duration_cast<std::chrono::seconds>(activeItem->executeEndTime - activeItem->executeStartTime).count() << ":"
+                                    << std::chrono::duration_cast<std::chrono::milliseconds>(activeItem->executeEndTime - activeItem->executeStartTime).count() 
+                                    << "s | " //TODO CHANGE LAYOUT TO BETTER REFLECT 0M:0S:0MS
+    << activeItem->originalPath << " | " << operation << " | " "Initial File Size: " << activeItem->startSize << " B | " 
+    << "New File Size: " << activeItem->endSize << " B | " << std::endl;
+}
+
+void Batch::InvalidBatchItem(){
+    ItemSuccessfullyProcessed(false);
+}
+
+void Batch::ValidateBatchItem(){
+    if(activeItem->endSize <= 0){
+        ItemSuccessfullyProcessed(false);
+        std::cout << "Error reading processed file information" << std::endl;
+    }
+    else{
+        ItemExecuteEnd();
+        RecordExecutionResults();
+        ItemSuccessfullyProcessed(true);
+    }
+}
 void Batch::ItemSuccessfullyProcessed(bool status){
     if(status){
         successfulExecutions++;

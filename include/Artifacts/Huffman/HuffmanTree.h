@@ -3,11 +3,12 @@
 
 struct HuffmanTree{
     public:
-        virtual ~HuffmanTree(){ //C++ voodoo-warlock magic requires this to be a virtual destructor or there will be large mem leaks
+        virtual ~HuffmanTree(){
+            
         }
-        int pix;
-        int arrloc;
-        float freq;
+        int pix=0;
+        int arrloc=0;
+        float freq=0.0;
 };
 
 #endif

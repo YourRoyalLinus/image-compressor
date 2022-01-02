@@ -2,33 +2,38 @@
 #ifndef BATCH_H
 #define BATCH_H
 
+#include "./BatchItem.h"
+#include "../FileHandling/FileObjects/File.h"
+#include <memory>
 #include <chrono>
 #include <vector>
 #include <string>
+
+class BatchItem;
 
 class Batch{
     public:
         Batch(std::vector<std::string> files, std::string iPath, std::string oPath);
 
-        void SetActiveItem(std::string item);
-        void ExecuteStart();
-        void ExecuteEnd();
-        void RecordExecutionResults(long startSize, long compressedSize, bool wasDecoded);
+        std::shared_ptr<File> GetActiveItem();
+        void SetActiveItem(std::shared_ptr<File> file);
+        void UpdateActiveItemSize(File& file);
         
-        void ItemSuccessfullyProcessed(bool status);
+        void ItemExecuteStart();
+        void ItemExecuteEnd();
+
+        void InvalidBatchItem();
+        void ValidateBatchItem();
         int CheckBatchStatus();
         
-
         std::vector<std::string> inputFiles;
         std::string inboundPath;
         std::string outboundPath;
-        
     private:
-        
-        std::chrono::time_point<std::chrono::system_clock> executeStart;
-        std::chrono::time_point<std::chrono::system_clock> executeEnd;
+        void ItemSuccessfullyProcessed(bool status);
+        void RecordExecutionResults();
 
-        std::string activeItem;
+        std::unique_ptr<BatchItem> activeItem;
         unsigned int batchSize;
         unsigned int successfulExecutions;
         

@@ -4,12 +4,13 @@
 #include "../include/FileHandling/FileMarshaller.h"
 #include "../include/Utils/Utils.h"
 
+#include <memory>
 #include <assert.h>
 #include <fstream>
 
 int main(int argc, char **argv){
-    FileMarshaller* fileMarshaller = new FileMarshaller();
-    CommandLineHandler* cmdHandler = new CommandLineHandler();
+    std::shared_ptr<FileMarshaller> fileMarshaller = std::shared_ptr<FileMarshaller>(new FileMarshaller());
+    std::unique_ptr<CommandLineHandler> cmdHandler = std::unique_ptr<CommandLineHandler>(new CommandLineHandler());
 
     //Handles first argument
     //Current arguments don't support multiple args
@@ -30,7 +31,7 @@ int main(int argc, char **argv){
     }
 
     std::string homePath = fileMarshaller->CreateHomePath();
-    if(inputFiles.size() > 0){ //TODO if batch = 1 vs batch > 1?
+    if(inputFiles.size() > 0){
         std::string timestamp = Utils::GetTimeStamp();
         std::string timestampPath = fileMarshaller->CreatePath(homePath, timestamp);
         assert(fileMarshaller->DoesPathExist(timestampPath));
@@ -45,8 +46,8 @@ int main(int argc, char **argv){
             fileMarshaller->CreatePath(timestampPath, "outbound");
         }
 
-        Batch* batch = new Batch(inputFiles, inboundPath, outboundPath);
-        ImageCompressionEngine* ice = new ImageCompressionEngine(batch, fileMarshaller); 
+        std::shared_ptr<Batch> batch = std::shared_ptr<Batch>(new Batch(inputFiles, inboundPath, outboundPath));
+        std::unique_ptr<ImageCompressionEngine> ice = std::unique_ptr<ImageCompressionEngine>(new ImageCompressionEngine(batch, fileMarshaller)); 
         int res = ice->StartBatchCompression();
         if(res != 0){
             std::cout << "Batch completed succesfully, however " << res << " files were unable to be compressed" << std::endl;

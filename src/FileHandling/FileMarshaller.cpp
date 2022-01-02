@@ -67,10 +67,6 @@ bool FileMarshaller::DoesPathExist(std::string filePath){
     return FileSystem::instance().DoesPathExist(filePath);
 }
 
-bool FileMarshaller::IsValidFileType(std::string fileExt){
-    return FileSystem::instance().IsValidFileType(fileExt);
-}
-
 void FileMarshaller::FlagFileForCleanUp(std::string filePath){
     _cleanUpFiles.push_back(filePath);
 }

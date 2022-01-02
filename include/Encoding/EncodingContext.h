@@ -25,7 +25,7 @@ class EncodingContext : public Context{
         virtual ~EncodingContext(){
         }
     protected: 
-        std::unique_ptr<DecodingStrategy> decodingStrategy;
+        std::shared_ptr<DecodingStrategy> decodingStrategy;
         std::shared_ptr<PixelFrequencies> pf;
         std::shared_ptr<BMPImage> image;
 

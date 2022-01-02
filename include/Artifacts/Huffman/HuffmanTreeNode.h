@@ -14,23 +14,9 @@ struct HuffmanTreeNode{
 
         HuffmanTreeNode(const PixelFrequencies& pixelFreq){
             pix = pixelFreq.pix;
-            code = pixelFreq.code;
+            code = std::string(pixelFreq.code.get());
             left = nullptr;
             right = nullptr;
-        }
-
-        HuffmanTreeNode(const HuffmanTreeNode& node){
-            pix = node.pix;
-            code = node.code;
-            left = node.left;
-            right = node.right;
-        }
-
-        HuffmanTreeNode& operator=(const HuffmanTreeNode& rhs){
-            pix = rhs.pix;
-            code = rhs.code;
-            left = rhs.left;
-            right = rhs.right;
         }
 
         template<class Archive>

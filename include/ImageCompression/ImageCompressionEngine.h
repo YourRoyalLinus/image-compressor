@@ -3,22 +3,24 @@
 
 #include "./Batch.h"
 #include "../FileHandling/FileMarshaller.h"
-
+#include <memory>
 #include <vector>
 #include <string>
 
 class ImageCompressionEngine{
     public:
-        ImageCompressionEngine(Batch* batch);
-        ImageCompressionEngine(Batch* batch, FileMarshaller* fm);
-        ~ImageCompressionEngine();
+        ImageCompressionEngine(std::shared_ptr<Batch> batch);
+        ImageCompressionEngine(std::shared_ptr<Batch> batch, std::shared_ptr<FileMarshaller> fm);
 
         int StartBatchCompression();
     private:
-        FileMarshaller* fileMarshaller;
-        Batch* batch;
+        bool GetNextBatchItem(unsigned short int batchItemId);
+        void EncodeImage(File& currentFile);
+        void DecodeImage(File& currentFile);
+        void CreateLocalCopies(File& currentFile);
 
-        std::vector<std::string> tmpFilePathsToBeCleanedUp;
+        std::shared_ptr<FileMarshaller> fileMarshaller;
+        std::shared_ptr<Batch> batch;
 };
 
 #endif

@@ -16,6 +16,10 @@ struct FileHeader{
             return _buffer;
         }
 
+        ~FileHeader(){
+            delete[] _buffer;
+        }
+
         const unsigned int size = 54;
 
         unsigned char fileType = 0;
@@ -39,10 +43,6 @@ struct FileHeader{
         
     private:
         unsigned char* _buffer;
-
-        void FreeBufferPtr(){
-            delete _buffer;
-        }
 
         void ClearBuffer(){
             _buffer = new unsigned char[size];

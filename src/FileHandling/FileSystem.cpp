@@ -2,6 +2,7 @@
 #include "../../include/Utils/Utils.h"
 
 #include <iostream>
+#include <algorithm>
 #include <fstream>
 #include <pwd.h>
 #include <experimental/filesystem>
@@ -26,7 +27,7 @@ std::string FileSystem::CreatePath(const std::string& srcPath, const std::string
     return newPath;
 }
 
-std::shared_ptr<std::ofstream>  FileSystem::CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode){
+std::shared_ptr<std::ofstream> FileSystem::CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode){
     std::shared_ptr<std::ofstream> f(new std::ofstream(filePath, mode));
     if (!f->is_open())
     {
@@ -72,13 +73,4 @@ long FileSystem::GetFileSize(const std::string& filePath){
 
 bool FileSystem::DoesPathExist(const std::string& filePath){
     return std::experimental::filesystem::exists(filePath);
-}
-
-bool FileSystem::IsValidFileType(std::string fileExt){
-    if(find(validFileTypes, validFileTypes+countOfValidFileTypes-1, fileExt) == validFileTypes+countOfValidFileTypes){
-        std::cout << "\"" << fileExt << "\" is not one of the supported file types\n";
-        return false;
-    }
-
-    return true;
 }

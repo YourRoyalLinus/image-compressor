@@ -17,7 +17,8 @@ void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshall
     
         CreateImageFile(decodedPixelVec, currentFile, *encodedImage);
     }
-
+    
+    currentFile.size = marshaller.GetFileSize(currentFile.fullPath);
 }
 
 std::shared_ptr<std::ifstream> HuffmanDecodingStrategy::GetDecodedFileStream(File& currentFile, FileMarshaller& marshaller){

@@ -18,10 +18,6 @@ class FileSystem{
         void DeleteFile(const std::string& filePath);
         long GetFileSize(const std::string& stringPath);
         bool DoesPathExist(const std::string& filePath);
-        bool IsValidFileType(std::string fileExt);
-
-        inline static std::string validFileTypes[4] = { "bmp", "tif", "tiff", "jcif" };
-        static const unsigned int countOfValidFileTypes = 4;
     protected:
         FileSystem();
 };

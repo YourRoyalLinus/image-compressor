@@ -6,7 +6,7 @@
 #include <algorithm>
 
 namespace ContextBuilder{
-    static std::vector<int> GetHistogram(int pixelBufferSize, unsigned char* pixelDataArray ){
+    std::vector<int> GetHistogram(int pixelBufferSize, unsigned char* pixelDataArray ){
         std::vector<int> hist(256);
         for(unsigned i = 0; i < 256; i++){
             hist[i] = 0;
@@ -20,7 +20,7 @@ namespace ContextBuilder{
         return hist;
     }
 
-    static int GetNonZeroOccurances(std::vector<int>& hist){
+    int GetNonZeroOccurances(std::vector<int>& hist){
         int nodes = 0;
         for(unsigned i = 0; i < 256; i++){
             if(hist[i] != 0){
@@ -31,7 +31,7 @@ namespace ContextBuilder{
         return nodes;
     }
 
-    static int GetMaxCodeLength(float p){
+    int GetMaxCodeLength(float p){
         int i = 0;
         while((1/p) > Utils::FibonacciSeq(i)){
             i++;
@@ -40,11 +40,11 @@ namespace ContextBuilder{
         return (i - 3);
     }
 
-    static int GetTotalNodes(int nodes){
+    int GetTotalNodes(int nodes){
         return 2 * nodes - 1;
     }
 
-    static float GetMinimumProbabilityOfOccurance(std::vector<int>& hist, int imageWidth, int imageHeight){
+    float GetMinimumProbabilityOfOccurance(std::vector<int>& hist, int imageWidth, int imageHeight){
         float probability = 1.0;
         float probabilityTemp;
 
@@ -56,7 +56,6 @@ namespace ContextBuilder{
         }
 
         return probability;
-        
     }
 }
 

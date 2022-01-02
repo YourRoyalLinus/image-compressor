@@ -36,7 +36,7 @@ void BinaryWriter::HandleNextByte(unsigned char byte){
     WriteByteToFile();
 }
 void BinaryWriter::WriteByteToFile(){
-    _ofStream->write((char*) &_currentByte, sizeof(char));
+    _ofStream->write(reinterpret_cast<char*>(&_currentByte), sizeof(char));
 }
 
 void BinaryWriter::LeftShiftBitByOne(){
