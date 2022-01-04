@@ -23,6 +23,6 @@ namespace Compressor{
         static void DecodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
              encodingContext.Decode(currentFile, marshaller);
         }
-};
+}
 
 #endif

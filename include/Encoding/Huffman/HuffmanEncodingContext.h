@@ -16,7 +16,8 @@ class HuffmanEncodingContext : public EncodingContext{
         void Decode(File& currentFile, FileMarshaller& marshaller) override;
     private:
         std::shared_ptr<HuffmanTreeNode> rootNode;
-        std::vector<std::string> encodedPixelVec;
+        PixelFrequencies* pfs;
+        int nonZeroNodes;
         int encodedPixelDataBits;
 
         void BuildHuffmanContext();
@@ -24,7 +25,7 @@ class HuffmanEncodingContext : public EncodingContext{
         std::shared_ptr<std::ofstream> GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller);
         int SeralizeAndWriteTo(std::ofstream& encodedFileStream, unsigned int fileOffset);
         void WriteHeaderDataTo(BinaryWriter& binWriter, BMPImage& img);
-        void WriteEncodedDataTo(BinaryWriter& binWriter);
+        void WriteEncodedDataTo(BinaryWriter& binWriter, BMPImage& img);
     
 };
 

@@ -17,7 +17,7 @@ struct FileHeader{
         }
 
         ~FileHeader(){
-            delete[] _buffer;
+            //delete[] _buffer;
         }
 
         const unsigned int size = 54;

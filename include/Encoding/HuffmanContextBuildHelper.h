@@ -183,40 +183,16 @@ namespace ContextBuilder{
         }
     }
 
-    std::unordered_map<unsigned short int, std::string> CreateEncodingMap(int nonZeroNodes, PixelFrequencies* pixFreqs){
-        std::unordered_map<unsigned short int, std::string> temp;
-        for(int pixelValue = 0; pixelValue < 256; pixelValue++){
-            for(int k = 0; k < nonZeroNodes; k++){
-                if(pixelValue == pixFreqs[k].pix){
-                    std::string c = pixFreqs[k].code.get();
-                    temp[pixelValue] = c;
-                    break;
-                }
+    std::string GetHuffmanCode(int pixel, int nonZeroNodes, PixelFrequencies* pixFreqs){
+        for(int k = 0; k < nonZeroNodes; k++){
+            if(pixel == pixFreqs[k].pix){
+                return std::string(pixFreqs[k].code.get());
             }
         }
-        return temp;
-    }
-
-    std::vector<std::string> CreateEncodedPixelVec(std::unordered_map<unsigned short int, std::string> encodingMap,  int pixelDataArraySize, unsigned char* pixelDataArray) {
-        int pixVal = 0;
-        std::vector<std::string> encodedPixelVec;
-        for(int i = 0; i < pixelDataArraySize; i++){
-            pixVal = *(pixelDataArray+i);
-            std::string huffmanCode = encodingMap[pixVal];
-            encodedPixelVec.push_back(huffmanCode);                
-        }
-
-        return encodedPixelVec;
+    
+        return "";
     }
     
-    int GetEncodedPixelDataSizeInBits(const std::vector<std::string>& encodedPixelVec){
-        int s = 0;
-        for(int i = 0; i < encodedPixelVec.size(); i++){
-            s += encodedPixelVec[i].size();
-        }
-        
-        return s;
-    }
 
     std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, int totalNodes){
         std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
@@ -253,6 +229,6 @@ namespace ContextBuilder{
         return root;       
 
     }
-};
+}
 
 #endif

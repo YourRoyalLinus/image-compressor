@@ -8,10 +8,8 @@ struct Uncopyable{
         ~Uncopyable(){
         }
     private:
-        Uncopyable(const Uncopyable&){
-        }
-        Uncopyable& operator=(const Uncopyable&){
-        }
+        Uncopyable(const Uncopyable&) = default;
+        Uncopyable& operator=(const Uncopyable&) = default;
 };
 
 #endif

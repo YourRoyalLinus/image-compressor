@@ -1,7 +1,7 @@
 SOURCES=$(shell find ./src -name *.cpp)
 OBJECTS=$(patsubst %.cpp, %.o, $(SOURCES))
 LIBS=-lstdc++fs -L/usr/X11R6/lib -lm -lpthread -lX11
-CFLAGS= -std=gnu++17 -g
+CFLAGS= -std=gnu++17 -g -Wall -Wextra -pedantic-errors 
 CC=g++
 OUTPUT_BIN=/build
 EXECUTABLE=build/compress.exe

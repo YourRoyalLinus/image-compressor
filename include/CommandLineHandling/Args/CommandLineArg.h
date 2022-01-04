@@ -9,6 +9,7 @@ class CommandLineArg{
         struct Artifact{
             std::vector<std::string> files;
         };
+        virtual ~CommandLineArg(){}
         virtual void Handle() = 0;
         virtual void SetFlag() = 0;
 
