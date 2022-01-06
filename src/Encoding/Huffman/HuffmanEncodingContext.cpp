@@ -1,4 +1,3 @@
-#include "../../../include/Encoding/ContextBuildHelper.h" //As a base for CBHs should this be included in HuffmanCBH?
 #include "../../../include/Encoding/HuffmanContextBuildHelper.h"
 #include "../../../include/Encoding/Huffman/HuffmanEncodingContext.h"
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
@@ -35,7 +34,6 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     int totalNodes = ContextBuilder::GetTotalNodes(nonZeroNodes);
 
     this->pixelFreqs = ContextBuilder::InitializePixelFrequencies();
-    //std::vector<HuffmanCode> huffmanCodes = ContextBuilder::InitializeHuffmanCodes(nonZeroNodes);
 
     ContextBuilder::InitializeLeafNodes(hist, (imageWidth * imageHeight), this->pixelFreqs);
     ContextBuilder::SortPixFreqsAscending(this->pixelFreqs);  
@@ -44,14 +42,6 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
 
     ContextBuilder::SortPixelFreqsDescending(this->pixelFreqs);
     rootNode = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*this->pixelFreqs[0]));
-
-    std::ofstream test("tree.txt");
-    test << "i          |             pix                   | code \n";
-    for(int i = 0; i < pixelFreqs.size(); i++){
-        test << i << "          " << pixelFreqs[i]->pix << "          " << pixelFreqs[i]->code << std::endl;
-    }
-    test.flush();
-    test.close();
 }
 
 void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
@@ -106,7 +96,7 @@ int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream,
 }
 
 void HuffmanEncodingContext::WriteHeaderDataTo(BinaryWriter& binWriter, BMPImage& img){
-    unsigned char* headerBuffer = img.header->WriteToBuffer();
+    std::vector<unsigned char> headerBuffer = img.header->WriteToBuffer();
     int imageHeaderSize = img.header->size;
     unsigned char byte;
 

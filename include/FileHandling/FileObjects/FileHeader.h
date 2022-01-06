@@ -1,23 +1,19 @@
 #ifndef FILEHEADER_H
 #define FILEHEADER_H
 
+#include <vector>
 struct FileHeader{
     public:
         FileHeader(unsigned char* buffer){
-            _buffer = buffer;
+            FillBuffer(buffer);
             GetFileHeaderData();
             GetInfoHeaderData();
         }
         
-        unsigned char* WriteToBuffer(){
-            ClearBuffer(); 
+        std::vector<unsigned char> WriteToBuffer(){
             WriteFileHeaderData();
             WriteFileInfoData();
             return _buffer;
-        }
-
-        ~FileHeader(){
-            delete[] _buffer; //todo fix
         }
 
         const unsigned int size = 54;
@@ -42,10 +38,12 @@ struct FileHeader{
         unsigned int importantColors = 0;
         
     private:
-        unsigned char* _buffer = nullptr;
+        std::vector<unsigned char> _buffer;
 
-        void ClearBuffer(){
-            _buffer = new unsigned char[size];
+        void FillBuffer(unsigned char* buf){
+            for(unsigned int i = 0; i < size; i++){
+                _buffer.push_back(buf[i]);
+            }
         }
 
         void GetFileHeaderData(){

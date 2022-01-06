@@ -5,17 +5,17 @@
 #include <ios>
 
 void HuffmanDecodingStrategy::Decode(File& currentFile, FileMarshaller& marshaller){
-    std::unique_ptr<JCIFImage> encodedImage = std::unique_ptr<JCIFImage>(new JCIFImage(currentFile.fullPath.c_str()));
-    ImageParser::instance().ParseImage(*encodedImage);
+    JCIFImage encodedImage(currentFile.fullPath.c_str());
+    ImageParser::instance().ParseImage(encodedImage);
 
     {
         std::shared_ptr<std::ifstream> encodedImageStream = GetDecodedFileStream(currentFile, marshaller);
-        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(*encodedImageStream, encodedImage->header->size);  
+        std::shared_ptr<HuffmanTreeNode> deserializedRootNode = DeserializeFileData(*encodedImageStream, encodedImage.header->size);  
 
-        std::unique_ptr<BinaryReader> binReader = std::unique_ptr<BinaryReader>(new BinaryReader(encodedImageStream, encodedImage->encodedPixelArrayBytes, encodedImage->bitPadding));
-        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(*binReader, *encodedImage, deserializedRootNode);
-    
-        CreateImageFile(decodedPixelVec, currentFile, *encodedImage);
+        BinaryReader binReader = BinaryReader(encodedImageStream, encodedImage.encodedPixelArrayBytes, encodedImage.bitPadding);
+
+        std::vector<unsigned char> decodedPixelVec = DecodePixelArray(binReader, deserializedRootNode);
+        CreateImageFile(decodedPixelVec, currentFile, encodedImage);
     }
     
     currentFile.size = marshaller.GetFileSize(currentFile.fullPath);
@@ -38,7 +38,7 @@ std::shared_ptr<HuffmanTreeNode> HuffmanDecodingStrategy::DeserializeFileData(st
 }
 
 
-std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(BinaryReader& binReader, JCIFImage& encodedImage, std::shared_ptr<HuffmanTreeNode> rootNode){
+std::vector<unsigned char> HuffmanDecodingStrategy::DecodePixelArray(BinaryReader& binReader, std::shared_ptr<HuffmanTreeNode> rootNode){
     std::shared_ptr<HuffmanTreeNode> currentNode = rootNode;
     std::vector<unsigned char> decodedPixelVec;
     int nextCode;
@@ -72,6 +72,9 @@ void HuffmanDecodingStrategy::CreateImageFile(std::vector<unsigned char>& decode
             break;
         case File::FileType::TIFF:
             FileConverter::instance().ConvertImageToTIFF(currentFile, newImage);
+            break;
+        default:
+            std::cout << "Error Decoding image: " << encodedImage.path << std::endl;
             break;
     }
 }

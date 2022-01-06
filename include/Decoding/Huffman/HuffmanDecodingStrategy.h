@@ -14,7 +14,7 @@ class HuffmanDecodingStrategy : public DecodingStrategy{
     private:
         std::shared_ptr<std::ifstream> GetDecodedFileStream(File& currentFile, FileMarshaller& marshaller);
         std::shared_ptr<HuffmanTreeNode> DeserializeFileData(std::ifstream& encodedFileStream, int fileOffset);
-        std::vector<unsigned char> DecodePixelArray(BinaryReader& binReader, JCIFImage& encodedImage, std::shared_ptr<HuffmanTreeNode> rootNode);
+        std::vector<unsigned char> DecodePixelArray(BinaryReader& binReader, std::shared_ptr<HuffmanTreeNode> rootNode);
         void CreateImageFile(std::vector<unsigned char>& decodedPixelVec, File& currentFile, JCIFImage& encodedImage);
 };
 

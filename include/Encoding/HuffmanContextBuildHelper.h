@@ -3,12 +3,13 @@
 
 #include "../Artifacts/PixelFrequencies.h"
 #include "../Artifacts/Huffman/HuffmanTreeNode.h"
-#include <unordered_map>
+#include "./ContextBuildHelper.h"
 #include <vector>
-#include <assert.h>
+#include <memory>
+#include <unordered_map>
 #include <queue>
 #include <algorithm>
-#include <memory>
+
 
 namespace ContextBuilder{
     namespace {
@@ -46,12 +47,11 @@ namespace ContextBuilder{
         }
     }
     
-    // Sorting w.r.t probability of occurrence
     void SortPixFreqsAscending(std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
         std::sort(pixFreqs.begin(), pixFreqs.end(), ComparePixFreqsLesserFrequencies);
     }
 
-    void CreateHuffmanTree(int nonZeroNodes, std::vector<std::shared_ptr<PixelFrequencies>>& pfs){ //DOESN'T WORK AS EXPECTED
+    void CreateHuffmanTree(int nonZeroNodes, std::vector<std::shared_ptr<PixelFrequencies>>& pfs){
         float sumProb;
         int sumPix;
         int treePosition = 0;

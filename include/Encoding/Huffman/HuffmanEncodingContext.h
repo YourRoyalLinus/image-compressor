@@ -3,7 +3,6 @@
 
 #include "../EncodingContext.h"
 #include "../../Artifacts//Huffman/HuffmanTreeNode.h"
-#include "../../Artifacts//Huffman/HuffmanCode.h"
 #include "../../../include/BinaryHandling/BinaryWriter.h"
 #include <vector>
 #include <string>
