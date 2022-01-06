@@ -8,19 +8,19 @@
 #include <memory>
 
 namespace Compressor{
-        static std::unique_ptr<HuffmanEncodingContext> GetHuffmanEncodingContext(File& currentFile){
+        std::unique_ptr<HuffmanEncodingContext> GetHuffmanEncodingContext(File& currentFile){
             return std::unique_ptr<HuffmanEncodingContext>(new HuffmanEncodingContext(currentFile.fullPath.c_str()));
         }
 
-        static void CreateContext(Context& context){
+        void CreateContext(Context& context){
             context.Build();   
         }
 
-        static void EncodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
+        void EncodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
             encodingContext.Encode(currentFile, marshaller);
         }
 
-        static void DecodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
+        void DecodeImageFile(EncodingContext& encodingContext, File& currentFile, FileMarshaller& marshaller){
              encodingContext.Decode(currentFile, marshaller);
         }
 }

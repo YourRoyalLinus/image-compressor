@@ -2,7 +2,6 @@
 #define HUFFMANCONTEXTBUILDHELPER_H
 
 #include "../Artifacts/PixelFrequencies.h"
-#include "../Artifacts/Huffman/HuffmanTree.h"
 #include "../Artifacts/Huffman/HuffmanTreeNode.h"
 #include <unordered_map>
 #include <vector>
@@ -13,222 +12,114 @@
 
 namespace ContextBuilder{
     namespace {
-        bool CompareFrequencies(const PixelFrequencies& lhs, const PixelFrequencies& rhs){
-            return lhs.freq > rhs.freq;
+        bool ComparePixFreqsGreaterFrequencies(const std::shared_ptr<PixelFrequencies>& lhs, const std::shared_ptr<PixelFrequencies>& rhs){
+            return lhs->freq > rhs->freq;
         }
 
-        std::vector<PixelFrequencies> SortPixFrequencies(int totalNodes, PixelFrequencies* pixFreqs){
-            std::vector<PixelFrequencies> tmp;
-            for(unsigned i = 0; i < totalNodes; i++){
-                tmp.push_back(pixFreqs[i]);
-            }
-            std::sort(tmp.begin(), tmp.end(), CompareFrequencies);
-
-            return tmp;
-        }
-
-        /* 
-        When two nodes in the tree have the same frequency, their ordering between the PixFreqs array and
-        the BFS-based tree can be swapped (left node in one  == right node in the other).
-        This happens more frequently with nodes deeper in the tree.
-        */
-        void SwapChildNodes(int node, PixelFrequencies& currentPixFreqNode, PixelFrequencies* pixFreqs){
-            PixelFrequencies tmp = currentPixFreqNode;
-            currentPixFreqNode = pixFreqs[node+1];
-            pixFreqs[node+1] = tmp;
+        bool ComparePixFreqsLesserFrequencies(const std::shared_ptr<PixelFrequencies>& lhs, const std::shared_ptr<PixelFrequencies>& rhs){
+            return lhs->freq < rhs->freq;
         }
     }
 
-    PixelFrequencies* InitializePixelFrequencies(int totalNodes, int maxCodeLength){ //rewrite all of this absolute garbage 
-        PixelFrequencies* pf = new PixelFrequencies[totalNodes];
-        for(unsigned i = 0; i < totalNodes; i++){
-            pf[i] = PixelFrequencies(maxCodeLength);
-        }
-    
-        return pf;
+    std::vector<std::shared_ptr<PixelFrequencies>> InitializePixelFrequencies(){ 
+        return std::vector<std::shared_ptr<PixelFrequencies>>();     
     }
 
-    HuffmanTree* InitializeHuffmanTree(int nonZeroNodes){
-        HuffmanTree* ht = new HuffmanTree[nonZeroNodes];
-        for(unsigned i = 0; i < nonZeroNodes; i++){
-            ht[i] = HuffmanTree();
-        }
-        return ht;      
-    }
 
-    void InitializeLeafNodes(const std::vector<int>& hist, int totalPixels, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
+    void InitializeLeafNodes(const std::vector<int>& hist, int totalPixels, std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
         float tempProb;
-        int j = 0;
 
         for(unsigned i = 0; i < 256; i++){
             if(hist[i] != 0){
+                std::shared_ptr<PixelFrequencies> tmpFreq = std::shared_ptr<PixelFrequencies>(new PixelFrequencies());
 
-                // pixel intensity value
-                huffTree[j].pix = i; 
-                pixFreqs[j].pix = i;
-                
-                // location of the node in the pixFreq array
-                huffTree[j].arrloc = j; 
-                
-                // probability of occurrence
+                tmpFreq->pix = i;
+
                 tempProb = (float)hist[i] / (float)totalPixels; 
-                pixFreqs[j].freq = tempProb;
-                huffTree[j].freq = tempProb;
+                tmpFreq->freq = tempProb;
                 
-                // Declaring the child of leaf node as NULL pointer
-                pixFreqs[j].left = nullptr; 
-                pixFreqs[j].right = nullptr;
+                tmpFreq->left = nullptr; 
+                tmpFreq->right = nullptr;
                 
-                // initializing the code
-                // word as end of line
-                pixFreqs[j].code[0] = '\0'; 
-                j++;
+                pixFreqs.push_back(tmpFreq);
             }
         }
     }
     
     // Sorting w.r.t probability of occurrence
-    void SortHuffCodeArray(int nonZeroNodes, HuffmanTree* huffTree){
-        HuffmanTree tempHuff;
-        
-        for (int i = 0; i < nonZeroNodes; i++)
-        {
-            for (int j = i + 1; j < nonZeroNodes; j++) 
-            {
-                if (huffTree[i].freq < huffTree[j].freq) 
-                {
-                    tempHuff = huffTree[i];
-                    huffTree[i] = huffTree[j];
-                    huffTree[j] = tempHuff;
-                }
-            }
-        }
+    void SortPixFreqsAscending(std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
+        std::sort(pixFreqs.begin(), pixFreqs.end(), ComparePixFreqsLesserFrequencies);
     }
 
-    void CreateHuffmanTree(int nonZeroNodes, PixelFrequencies* pixFreqs, HuffmanTree* huffTree){
+    void CreateHuffmanTree(int nonZeroNodes, std::vector<std::shared_ptr<PixelFrequencies>>& pfs){ //DOESN'T WORK AS EXPECTED
         float sumProb;
         int sumPix;
+        int treePosition = 0;
         int n = 0;
-        int nextNode = nonZeroNodes;
+
+        std::vector<std::shared_ptr<PixelFrequencies>> sortedPF(pfs);
 
         while (n < nonZeroNodes - 1) 
         {
-            // Adding the lowest two probabilities
-            sumProb = huffTree[nonZeroNodes - n - 1].freq + huffTree[nonZeroNodes - n - 2].freq;
-            sumPix = huffTree[nonZeroNodes - n - 1].pix + huffTree[nonZeroNodes - n - 2].pix;
-            
-            // Appending to the pixFreq Array
-            pixFreqs[nextNode].pix = sumPix;
-            pixFreqs[nextNode].freq = sumProb;
-            pixFreqs[nextNode].left = &pixFreqs[huffTree[nonZeroNodes - n - 2].arrloc];
-            
-            // arrloc points to the location of the child node in the pixFreq array
-            pixFreqs[nextNode].right = &pixFreqs[huffTree[nonZeroNodes - n - 1].arrloc];
-            pixFreqs[nextNode].code[0] = '\0';
 
-            // Using sum of the pixel values as  new representation for the new node since unlike strings, we cannot 
-            // concatenate because the pixel values are stored as integers. However, if we store the pixel values as strings
-            // we can use the concatenated string as a representation of the new node.
-            int i = 0;
-            
-            // Sorting and Updating the huffCode array simultaneously New position of the combined node
-            while (sumProb <= huffTree[i].freq)
-                i++;
-                
-            // Inserting the new node in the huffCode array
-            for (int k = nonZeroNodes; k >= 0; k--) 
-            {
-                if (k == i)
-                {
-                    huffTree[k].pix = sumPix;
-                    huffTree[k].freq = sumProb;
-                    huffTree[k].arrloc = nextNode;
-                }
-                else if (k > i)
-                    // Shifting the nodes below the new node by 1 For inserting the new node at the updated position k
-                    huffTree[k] = huffTree[k - 1];
-            }
-            n += 1;
-            nextNode += 1;
+            sumProb = sortedPF[treePosition]->freq + sortedPF[treePosition+1]->freq;
+            sumPix = sortedPF[treePosition]->pix + sortedPF[treePosition+1]->pix;
+
+            std::shared_ptr<PixelFrequencies> nextFreq = std::shared_ptr<PixelFrequencies>(new PixelFrequencies());
+            nextFreq->pix = sumPix;
+            nextFreq->freq = sumProb;
+            nextFreq->left = sortedPF[treePosition];
+            nextFreq->right = sortedPF[treePosition+1];
+
+            pfs.push_back(nextFreq);
+            sortedPF.push_back(nextFreq);
+            sortedPF.erase(sortedPF.begin(), sortedPF.begin()+2);
+
+            SortPixFreqsAscending(sortedPF);
+
+            n++;
         }
     }
 
-    void ConcatCodes(char* str, char* parentCode, char add){
-        int i = 0;
-        while (*(parentCode + i) != '\0'){
-            *(str + i) = *(parentCode + i);
-            i++;
+    void ConcatCodes(std::string& childCode, const std::string& parentCode, char add){
+        if(childCode.size() < parentCode.size()){
+            childCode.resize(parentCode.size());
         }
 
-        if (add != '2'){
-            str[i] = add;
-            str[i + 1] = '\0';
+        for(std::size_t i = 0; i < parentCode.size(); i++){
+            childCode[i] = parentCode[i];
         }
-        else{
-            str[i] = '\0';
-        } 
+
+        childCode += add;
     }
     
-    void Backtrack(int nodes, int totalNodes, PixelFrequencies* pixFreqs){
+    void Backtrack(int nodes, int totalNodes, std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
         const char left = '0';
         const char right = '1';
-
-        for(unsigned i = totalNodes - 1; i >= nodes; i--){
-            if(pixFreqs[i].left != nullptr){
-                ConcatCodes(pixFreqs[i].left->code.get(), pixFreqs[i].code.get(), left);
+        
+        for(int i = totalNodes - 1; i >= nodes; i--){
+            if(pixFreqs[i]->left != nullptr){
+                ConcatCodes(pixFreqs[i]->left->code, pixFreqs[i]->code, left);
             }
-            if(pixFreqs[i].right != nullptr){
-                ConcatCodes(pixFreqs[i].right->code.get(), pixFreqs[i].code.get(), right);
+            if(pixFreqs[i]->right != nullptr){
+                ConcatCodes(pixFreqs[i]->right->code, pixFreqs[i]->code, right);
             }
         }
     }
 
-    std::string GetHuffmanCode(int pixel, int nonZeroNodes, PixelFrequencies* pixFreqs){
-        for(int k = 0; k < nonZeroNodes; k++){
-            if(pixel == pixFreqs[k].pix){
-                return std::string(pixFreqs[k].code.get());
+    void SortPixelFreqsDescending(std::vector<std::shared_ptr<PixelFrequencies>>& pfs){
+        std::sort(pfs.begin(), pfs.end(), ComparePixFreqsGreaterFrequencies);
+    }
+
+    std::string GetHuffmanCode(int pixel, std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
+        for(std::size_t k = 0; k < pixFreqs.size(); k++){
+            if(pixel == pixFreqs[k]->pix && (pixFreqs[k]->left == nullptr && pixFreqs[k]->right == nullptr)){
+                return pixFreqs[k]->code;
             }
         }
-    
         return "";
     }
     
-
-    std::shared_ptr<HuffmanTreeNode> CreateHuffmanTreeNodes(PixelFrequencies* pixFreqs, int totalNodes){
-        std::vector<PixelFrequencies> sortedPixelFreqVec = SortPixFrequencies(totalNodes, pixFreqs);
-        pixFreqs = &sortedPixelFreqVec[0];
-        
-        std::queue<std::shared_ptr<HuffmanTreeNode>> q;
-        int node = 0;
-
-        PixelFrequencies pixFreqNode;
-        std::shared_ptr<HuffmanTreeNode> root = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(pixFreqs[node]));
-        std::shared_ptr<HuffmanTreeNode> currentNode = root;
-        
-        q.push(root);
-        while(node < totalNodes - 1){
-            pixFreqNode = pixFreqs[node];
-            currentNode = q.front();
-            q.pop();
-        
-            if(currentNode->pix != pixFreqNode.pix){ 
-                SwapChildNodes(node, pixFreqNode, pixFreqs);
-            }
-
-            if(pixFreqNode.left != nullptr){
-                currentNode->left = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.left));
-                q.push(currentNode->left);
-            }
-            if(pixFreqNode.right != nullptr){
-                currentNode->right = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*pixFreqNode.right));
-                q.push(currentNode->right);
-            }
-            node++;
-        }
-
-        return root;       
-
-    }
 }
 
 #endif

@@ -13,7 +13,7 @@ class BatchItem;
 
 class Batch{
     public:
-        Batch(std::vector<std::string> files, std::string iPath, std::string oPath);
+        Batch(std::vector<std::string>& files, std::string iPath, std::string oPath);
 
         std::shared_ptr<File> GetActiveItem();
         void SetActiveItem(std::shared_ptr<File> file);
@@ -33,7 +33,7 @@ class Batch{
         void ItemSuccessfullyProcessed(bool status);
         void RecordExecutionResults();
 
-        std::unique_ptr<BatchItem> activeItem;
+        std::shared_ptr<BatchItem> activeItem;
         unsigned int batchSize;
         unsigned int successfulExecutions;
         

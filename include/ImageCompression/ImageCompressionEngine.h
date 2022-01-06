@@ -9,8 +9,7 @@
 
 class ImageCompressionEngine{
     public:
-        ImageCompressionEngine(std::shared_ptr<Batch> batch);
-        ImageCompressionEngine(std::shared_ptr<Batch> batch, std::shared_ptr<FileMarshaller> fm);
+        ImageCompressionEngine(Batch& batch);
 
         int StartBatchCompression();
     private:
@@ -19,8 +18,9 @@ class ImageCompressionEngine{
         void DecodeImage(File& currentFile);
         void CreateLocalCopies(File& currentFile);
 
-        std::shared_ptr<FileMarshaller> fileMarshaller;
-        std::shared_ptr<Batch> batch;
+        Batch batch;
+        FileMarshaller fileMarshaller;
+        
 };
 
 #endif

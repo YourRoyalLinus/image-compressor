@@ -2,18 +2,20 @@
 #define PIXELFREQUENCIES_H
 
 #include <memory>
+
 struct PixelFrequencies{
     public:
         PixelFrequencies(){
         }
-        PixelFrequencies(int maxCodeLength){
-            code = std::shared_ptr<char[]>(new char[maxCodeLength]);
-        }
+        
+        PixelFrequencies(const PixelFrequencies&) = default;
+        
+        PixelFrequencies& operator=(const PixelFrequencies&) = default;
         
         int pix;
         float freq;
-        std::shared_ptr<char[]> code;
-        PixelFrequencies *left, *right;  
+        std::string code;
+        std::shared_ptr<PixelFrequencies> left, right;  
 };
 
 #endif

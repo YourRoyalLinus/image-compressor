@@ -12,7 +12,7 @@ namespace ContextBuilder{
             hist[i] = 0;
         }
 
-        for(unsigned i = 0; i < pixelBufferSize; i++){
+        for(int i = 0; i < pixelBufferSize; i++){
             int pixIntensityValue = *(pixelDataArray+i);
             hist[pixIntensityValue] += 1;
         }

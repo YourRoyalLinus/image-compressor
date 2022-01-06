@@ -1,7 +1,7 @@
 #include "../../include/ImageCompression/Batch.h"
 #include <iostream>
 
- Batch::Batch(std::vector<std::string> files, std::string iPath, std::string oPath) : inputFiles(files), inboundPath(iPath), outboundPath(oPath), batchSize(files.size()), successfulExecutions(0){
+ Batch::Batch(std::vector<std::string>& files, std::string iPath, std::string oPath) : inputFiles(files), inboundPath(iPath), outboundPath(oPath), batchSize(files.size()), successfulExecutions(0){
 
 }
 
@@ -11,7 +11,7 @@ std::shared_ptr<File> Batch::GetActiveItem(){
 
 void Batch::SetActiveItem(std::shared_ptr<File> file){
     if(activeItem == 0){
-        activeItem = std::unique_ptr<BatchItem>(new BatchItem(file));
+        activeItem = std::shared_ptr<BatchItem>(new BatchItem(file));
     }
     else{
         activeItem.reset(new BatchItem(file));

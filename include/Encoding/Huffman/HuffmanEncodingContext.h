@@ -3,6 +3,7 @@
 
 #include "../EncodingContext.h"
 #include "../../Artifacts//Huffman/HuffmanTreeNode.h"
+#include "../../Artifacts//Huffman/HuffmanCode.h"
 #include "../../../include/BinaryHandling/BinaryWriter.h"
 #include <vector>
 #include <string>
@@ -15,10 +16,9 @@ class HuffmanEncodingContext : public EncodingContext{
         void Encode(File& currentFile, FileMarshaller& marshaller) override;
         void Decode(File& currentFile, FileMarshaller& marshaller) override;
     private:
+        std::vector<std::shared_ptr<PixelFrequencies>> pixelFreqs;
         std::shared_ptr<HuffmanTreeNode> rootNode;
-        PixelFrequencies* pfs;
-        int nonZeroNodes;
-        int encodedPixelDataBits;
+        int encodedPixelDataBits = 0;
 
         void BuildHuffmanContext();
 

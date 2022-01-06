@@ -9,17 +9,17 @@
 #include <fstream>
 
 int main(int argc, char **argv){
-    std::shared_ptr<FileMarshaller> fileMarshaller = std::shared_ptr<FileMarshaller>(new FileMarshaller());
-    std::unique_ptr<CommandLineHandler> cmdHandler = std::unique_ptr<CommandLineHandler>(new CommandLineHandler());
+    FileMarshaller fileMarshaller = FileMarshaller();
+    CommandLineHandler cmdHandler = CommandLineHandler();
 
     //Handles first argument
     //Current arguments don't support multiple args
-    cmdHandler->ParseArgs(argc, argv); 
-    cmdHandler->ProcessArg();
-    std::vector<std::string> inputFiles = cmdHandler->RetrieveArtifact().files;
+    cmdHandler.ParseArgs(argc, argv); 
+    cmdHandler.ProcessArg();
+    std::vector<std::string> inputFiles = cmdHandler.RetrieveArtifact().files;
 
     for(unsigned i = 0; i < inputFiles.size(); i++){
-        if(fileMarshaller->DoesPathExist(inputFiles[i])){
+        if(fileMarshaller.DoesPathExist(inputFiles[i])){
             continue;
         }
         else{
@@ -30,25 +30,25 @@ int main(int argc, char **argv){
         }
     }
 
-    std::string homePath = fileMarshaller->CreateHomePath();
+    std::string homePath = fileMarshaller.CreateHomePath();
     if(inputFiles.size() > 0){
         std::string timestamp = Utils::GetTimeStamp();
-        std::string timestampPath = fileMarshaller->CreatePath(homePath, timestamp);
-        assert(fileMarshaller->DoesPathExist(timestampPath));
+        std::string timestampPath = fileMarshaller.CreatePath(homePath, timestamp);
+        assert(fileMarshaller.DoesPathExist(timestampPath));
 
         std::string inboundPath = timestampPath + "/inbound";
-        if(!fileMarshaller->DoesPathExist(inboundPath)){
-                fileMarshaller->CreatePath(timestampPath, "inbound");
+        if(!fileMarshaller.DoesPathExist(inboundPath)){
+                fileMarshaller.CreatePath(timestampPath, "inbound");
         }
 
         std::string outboundPath = timestampPath + "/outbound";
-        if(!fileMarshaller->DoesPathExist(outboundPath)){
-            fileMarshaller->CreatePath(timestampPath, "outbound");
+        if(!fileMarshaller.DoesPathExist(outboundPath)){
+            fileMarshaller.CreatePath(timestampPath, "outbound");
         }
 
-        std::shared_ptr<Batch> batch = std::shared_ptr<Batch>(new Batch(inputFiles, inboundPath, outboundPath));
-        std::unique_ptr<ImageCompressionEngine> ice = std::unique_ptr<ImageCompressionEngine>(new ImageCompressionEngine(batch, fileMarshaller)); 
-        int res = ice->StartBatchCompression();
+        Batch batch = Batch(inputFiles, inboundPath, outboundPath);
+        ImageCompressionEngine ice(batch); 
+        int res = ice.StartBatchCompression();
         if(res != 0){
             std::cout << "Batch completed succesfully, however " << res << " files were unable to be compressed" << std::endl;
             exit(0);

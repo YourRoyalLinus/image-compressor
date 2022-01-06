@@ -15,7 +15,6 @@ CommandLineHandler::~CommandLineHandler(){
 void CommandLineHandler::ParseArgs(int argc, char **argv){
     int opt;
     int optionIndex = 0;
-    int thisOptionOptInd = optind ? optind : 1;
     opt = getopt_long_only(argc, argv, "", longOptions, &optionIndex);
 
     CreateArg(opt, optarg);
@@ -29,7 +28,7 @@ CommandLineArg::Artifact CommandLineHandler::RetrieveArtifact(){
     return arg->GetArtifact();
 }
 
-void CommandLineHandler::CreateArg(char userArg, char* optArg){
+void CommandLineHandler::CreateArg(char userArg, char* optarg){
     switch(userArg){
         case -1:
             arg = new NullArg();

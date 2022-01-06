@@ -17,7 +17,7 @@ struct FileHeader{
         }
 
         ~FileHeader(){
-            //delete[] _buffer;
+            delete[] _buffer; //todo fix
         }
 
         const unsigned int size = 54;
@@ -42,7 +42,7 @@ struct FileHeader{
         unsigned int importantColors = 0;
         
     private:
-        unsigned char* _buffer;
+        unsigned char* _buffer = nullptr;
 
         void ClearBuffer(){
             _buffer = new unsigned char[size];

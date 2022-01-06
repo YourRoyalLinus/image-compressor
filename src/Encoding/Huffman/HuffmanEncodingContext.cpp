@@ -29,27 +29,29 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     int imageHeight = img->header->imageHeight;
     unsigned char* pixelDataArray = img->pixelDataArray;
 
-    HuffmanTree* huffmanTree = 0;
 
     std::vector<int> hist = ContextBuilder::GetHistogram(pixelBufferSize, pixelDataArray);
-    this->nonZeroNodes = ContextBuilder::GetNonZeroOccurances(hist);
-    float probability = ContextBuilder::GetMinimumProbabilityOfOccurance(hist, imageWidth, imageHeight);
+    int nonZeroNodes = ContextBuilder::GetNonZeroOccurances(hist);
     int totalNodes = ContextBuilder::GetTotalNodes(nonZeroNodes);
-    int maxCodeLength = ContextBuilder::GetMaxCodeLength(probability);
 
-    this->pfs = ContextBuilder::InitializePixelFrequencies(totalNodes, maxCodeLength);
-    huffmanTree = ContextBuilder::InitializeHuffmanTree(nonZeroNodes);
+    this->pixelFreqs = ContextBuilder::InitializePixelFrequencies();
+    //std::vector<HuffmanCode> huffmanCodes = ContextBuilder::InitializeHuffmanCodes(nonZeroNodes);
 
-    ContextBuilder::InitializeLeafNodes(hist, (imageWidth * imageHeight), this->pfs, huffmanTree);
-    ContextBuilder::SortHuffCodeArray(nonZeroNodes, huffmanTree);
-    ContextBuilder::CreateHuffmanTree(nonZeroNodes, this->pfs, huffmanTree);
-    ContextBuilder::Backtrack(nonZeroNodes, totalNodes, this->pfs);
-    
-    std::shared_ptr<HuffmanTreeNode> huffmanRootNode = ContextBuilder::CreateHuffmanTreeNodes(this->pfs,totalNodes);
+    ContextBuilder::InitializeLeafNodes(hist, (imageWidth * imageHeight), this->pixelFreqs);
+    ContextBuilder::SortPixFreqsAscending(this->pixelFreqs);  
+    ContextBuilder::CreateHuffmanTree(nonZeroNodes, this->pixelFreqs);
+    ContextBuilder::Backtrack(nonZeroNodes, totalNodes, this->pixelFreqs);
 
-    rootNode = huffmanRootNode;
+    ContextBuilder::SortPixelFreqsDescending(this->pixelFreqs);
+    rootNode = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*this->pixelFreqs[0]));
 
-    delete[] huffmanTree;
+    std::ofstream test("tree.txt");
+    test << "i          |             pix                   | code \n";
+    for(int i = 0; i < pixelFreqs.size(); i++){
+        test << i << "          " << pixelFreqs[i]->pix << "          " << pixelFreqs[i]->code << std::endl;
+    }
+    test.flush();
+    test.close();
 }
 
 void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
@@ -108,7 +110,7 @@ void HuffmanEncodingContext::WriteHeaderDataTo(BinaryWriter& binWriter, BMPImage
     int imageHeaderSize = img.header->size;
     unsigned char byte;
 
-    for(unsigned int i = 0; i < imageHeaderSize; i++){
+    for(int i = 0; i < imageHeaderSize; i++){
         byte = headerBuffer[i];
         binWriter.HandleNextByte(byte);
     }
@@ -120,18 +122,18 @@ void HuffmanEncodingContext::WriteEncodedDataTo(BinaryWriter& binWriter, BMPImag
     std::string huffmanCode;
     std::unordered_map<int, std::string> cache;
 
-    for(int i = 0; i < img.cimage.size(); i++){
+    for(unsigned long i = 0; i < img.cimage.size(); i++){
         currentPixel = *(img.pixelDataArray+i);
 
         if(cache.find(currentPixel) == cache.end()){
-            huffmanCode = ContextBuilder::GetHuffmanCode(currentPixel, this->nonZeroNodes, this->pfs);
+            huffmanCode = ContextBuilder::GetHuffmanCode(currentPixel, this->pixelFreqs);
             cache.insert({currentPixel, huffmanCode});
         }
         else{
             huffmanCode = cache[currentPixel];
         }
-
-        for(int j = 0; j < huffmanCode.size(); j++){
+        
+        for(unsigned long j = 0; j < huffmanCode.size(); j++){
             currentBit = huffmanCode[j];
             binWriter.HandleNextBit(currentBit);
             this->encodedPixelDataBits++;
