@@ -26,18 +26,19 @@ std::string FileSystem::CreatePath(const std::string& srcPath, const std::string
     return newPath;
 }
 
+std::string FileSystem::GetFileExt(const std::string& filePath){
+    return std::experimental::filesystem::path(filePath).extension();
+}
+
 std::shared_ptr<std::ofstream> FileSystem::CreateOutfileStream(const std::string& filePath, std::ios_base::openmode mode){
     std::shared_ptr<std::ofstream> f(new std::ofstream(filePath, mode));
     if (!f->is_open())
     {
         std::cout << "Error opening file" << filePath << std::endl;
+        exit(-1);
     }
 
     return f;
-}
-
-std::string FileSystem::GetFileExt(const std::string& filePath){
-    return std::experimental::filesystem::path(filePath).extension();
 }
 
 std::shared_ptr<std::ifstream>FileSystem::CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode){
@@ -45,6 +46,7 @@ std::shared_ptr<std::ifstream>FileSystem::CreateInfileStream(const std::string& 
     if (!f->is_open())
     {
         std::cout << "Error opening file" << filePath << std::endl;
+        exit(-1);
     }
 
     return f;
