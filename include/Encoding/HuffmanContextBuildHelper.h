@@ -109,17 +109,7 @@ namespace ContextBuilder{
 
     void SortPixelFreqsDescending(std::vector<std::shared_ptr<PixelFrequencies>>& pfs){
         std::sort(pfs.begin(), pfs.end(), ComparePixFreqsGreaterFrequencies);
-    }
-
-    std::string GetHuffmanCode(int pixel, std::vector<std::shared_ptr<PixelFrequencies>>& pixFreqs){
-        for(std::size_t k = 0; k < pixFreqs.size(); k++){
-            if(pixel == pixFreqs[k]->pix && (pixFreqs[k]->left == nullptr && pixFreqs[k]->right == nullptr)){
-                return pixFreqs[k]->code;
-            }
-        }
-        return "";
-    }
-    
+    }    
 }
 
 #endif

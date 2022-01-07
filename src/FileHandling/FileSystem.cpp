@@ -1,11 +1,10 @@
 #include "../../include/FileHandling/FileSystem.h"
-#include "../../include/Utils/Utils.h"
-
 #include <iostream>
 #include <algorithm>
 #include <fstream>
-#include <pwd.h>
 #include <experimental/filesystem>
+#include <pwd.h>
+#include <unistd.h>
 
 FileSystem::FileSystem(){
 

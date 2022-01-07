@@ -1,3 +1,5 @@
+#include "../../../include/FileHandling/FileMarshaller.h"
+#include "../../../include/Encoding/Encoder.h"
 #include "../../../include/Encoding/HuffmanContextBuildHelper.h"
 #include "../../../include/Encoding/Huffman/HuffmanEncodingContext.h"
 #include "../../../include/Decoding/Huffman/HuffmanDecodingStrategy.h"
@@ -28,7 +30,6 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     int imageHeight = img->header->imageHeight;
     unsigned char* pixelDataArray = img->pixelDataArray;
 
-
     std::vector<int> hist = ContextBuilder::GetHistogram(pixelBufferSize, pixelDataArray);
     int nonZeroNodes = ContextBuilder::GetNonZeroOccurances(hist);
     int totalNodes = ContextBuilder::GetTotalNodes(nonZeroNodes);
@@ -41,96 +42,39 @@ void HuffmanEncodingContext::BuildHuffmanContext(){
     ContextBuilder::Backtrack(nonZeroNodes, totalNodes, this->pixelFreqs);
 
     ContextBuilder::SortPixelFreqsDescending(this->pixelFreqs);
-    rootNode = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*this->pixelFreqs[0]));
+    this->rootNode = std::shared_ptr<HuffmanTreeNode>(new HuffmanTreeNode(*this->pixelFreqs[0]));
 }
 
-void HuffmanEncodingContext::Encode(File& currentFile, FileMarshaller& marshaller){
+void HuffmanEncodingContext::Encode(File& currentFile){
     std::shared_ptr<BMPImage> img = EncodingContext::GetBMPImage();
     int imageHeaderSize = img->header->size;
+    int encodedPixelDataBits = 0;
 
     {
-        std::shared_ptr<std::ofstream> encodedImageStream = GetEncodedFileStream(currentFile, marshaller); 
+        std::shared_ptr<std::ofstream> encodedImageStream = Encoder::GetEncodedFileStream(currentFile); 
 
-        int dhtSerializedSize = SeralizeAndWriteTo(*encodedImageStream, imageHeaderSize);
+        int dhtSerializedSize = Encoder::SeralizeAndWriteTo(*encodedImageStream, this->rootNode, imageHeaderSize);
         int pixelDataOffset = imageHeaderSize + dhtSerializedSize;
 
         std::unique_ptr<BinaryWriter> binWriter = std::unique_ptr<BinaryWriter>(new BinaryWriter(encodedImageStream, pixelDataOffset));
-        WriteEncodedDataTo(*binWriter, *img);
+        Encoder::WriteEncodedDataTo(*binWriter, *img, this->pixelFreqs, encodedPixelDataBits);
 
-        this->encodedPixelDataBits += binWriter->GetPadding();
-        int encodedFileSize = imageHeaderSize + dhtSerializedSize + (this->encodedPixelDataBits/8);
+        encodedPixelDataBits += binWriter->GetPadding();
+        int encodedFileSize = imageHeaderSize + dhtSerializedSize + (encodedPixelDataBits/8);
 
         img->header->reservedByteOne = currentFile.type;
         img->header->reservedByteTwo = binWriter->GetPadding();
         img->header->compression = 3;
         img->header->pixelDataOffset = pixelDataOffset;
         img->header->imageSize = encodedFileSize;
-
         
         binWriter.reset(new BinaryWriter(encodedImageStream, 0));
-        WriteHeaderDataTo(*binWriter, *img);
+        Encoder::WriteHeaderDataTo(*binWriter, *img);
     }
 
-    currentFile.size = marshaller.GetFileSize(currentFile.fullPath);
+    currentFile.size = FileMarshaller::instance().GetFileSize(currentFile.fullPath);
 }
 
-void HuffmanEncodingContext::Decode(File& currentFile, FileMarshaller& marshaller){
-    decodingStrategy->Decode(currentFile, marshaller);
-}
-
-std::shared_ptr<std::ofstream> HuffmanEncodingContext::GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller){
-    marshaller.FlagFileForCleanUp(currentFile.fullPath);
-    marshaller.UpdateFileExt(currentFile, "jcif");
-    return marshaller.CreateOutfileStream(currentFile.fullPath, std::ofstream::binary);
-}
-
-int HuffmanEncodingContext::SeralizeAndWriteTo(std::ofstream& encodedFileStream, unsigned int fileOffset){
-    encodedFileStream.seekp(fileOffset);
-    {
-        cereal::BinaryOutputArchive binaryOutputArchive(encodedFileStream);
-        binaryOutputArchive(rootNode);
-    }
-    int end = encodedFileStream.tellp();
-    
-    return end - fileOffset;
-}
-
-void HuffmanEncodingContext::WriteHeaderDataTo(BinaryWriter& binWriter, BMPImage& img){
-    std::vector<unsigned char> headerBuffer = img.header->WriteToBuffer();
-    int imageHeaderSize = img.header->size;
-    unsigned char byte;
-
-    for(int i = 0; i < imageHeaderSize; i++){
-        byte = headerBuffer[i];
-        binWriter.HandleNextByte(byte);
-    }
-}
-
-void HuffmanEncodingContext::WriteEncodedDataTo(BinaryWriter& binWriter, BMPImage& img){
-    unsigned char currentBit;
-    int currentPixel;
-    std::string huffmanCode;
-    std::unordered_map<int, std::string> cache;
-
-    for(unsigned long i = 0; i < img.cimage.size(); i++){
-        currentPixel = *(img.pixelDataArray+i);
-
-        if(cache.find(currentPixel) == cache.end()){
-            huffmanCode = ContextBuilder::GetHuffmanCode(currentPixel, this->pixelFreqs);
-            cache.insert({currentPixel, huffmanCode});
-        }
-        else{
-            huffmanCode = cache[currentPixel];
-        }
-        
-        for(unsigned long j = 0; j < huffmanCode.size(); j++){
-            currentBit = huffmanCode[j];
-            binWriter.HandleNextBit(currentBit);
-            this->encodedPixelDataBits++;
-        }
-    }    
-
-    if(binWriter.IsPaddingRequired()){
-        binWriter.CalculatePadding();
-    }
+void HuffmanEncodingContext::Decode(File& currentFile){
+    decodingStrategy->Decode(currentFile);
 }

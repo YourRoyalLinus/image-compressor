@@ -15,8 +15,8 @@ class DecodingStrategy;
 
 class EncodingContext : public Context{
     public:
-        virtual void Encode(File& currentFile, FileMarshaller& marshaller) = 0;
-        virtual void Decode(File& currentFile, FileMarshaller& marshaller) = 0;
+        virtual void Encode(File& currentFile) = 0;
+        virtual void Decode(File& currentFile) = 0;
         virtual ~EncodingContext(){
         }
     protected: 
@@ -24,7 +24,7 @@ class EncodingContext : public Context{
         std::shared_ptr<BMPImage> image;        
         
         void BuildImage(){
-            image = std::shared_ptr<BMPImage>(new BMPImage(contextFilePath));
+            image = std::shared_ptr<BMPImage>(new BMPImage(contextFilePath)); //ImageMarshaller?
             ImageParser::instance().ParseImage(*image.get()); 
         }
 

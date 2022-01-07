@@ -1,12 +1,12 @@
 #ifndef CONTEXTBUILDHELPER_H
 #define CONTEXTBUILDHELPER_H
 
-#include "../Utils/Utils.h"
+#include "../Utils/GeneralUtility.h"
 #include <vector>
 #include <algorithm>
 
 namespace ContextBuilder{
-    std::vector<int> GetHistogram(int pixelBufferSize, unsigned char* pixelDataArray ){
+    inline std::vector<int> GetHistogram(int pixelBufferSize, unsigned char* pixelDataArray ){
         std::vector<int> hist(256);
         for(unsigned i = 0; i < 256; i++){
             hist[i] = 0;
@@ -20,7 +20,7 @@ namespace ContextBuilder{
         return hist;
     }
 
-    int GetNonZeroOccurances(std::vector<int>& hist){
+    inline int GetNonZeroOccurances(std::vector<int>& hist){
         int nodes = 0;
         for(unsigned i = 0; i < 256; i++){
             if(hist[i] != 0){
@@ -31,20 +31,20 @@ namespace ContextBuilder{
         return nodes;
     }
 
-    int GetMaxCodeLength(float p){
+    inline int GetMaxCodeLength(float p){
         int i = 0;
-        while((1/p) > Utils::FibonacciSeq(i)){
+        while((1/p) > Utility::FibonacciSeq(i)){
             i++;
         }
 
         return (i - 3);
     }
 
-    int GetTotalNodes(int nodes){
+    inline int GetTotalNodes(int nodes){
         return 2 * nodes - 1;
     }
 
-    float GetMinimumProbabilityOfOccurance(std::vector<int>& hist, int imageWidth, int imageHeight){
+    inline float GetMinimumProbabilityOfOccurance(std::vector<int>& hist, int imageWidth, int imageHeight){
         float probability = 1.0;
         float probabilityTemp;
 

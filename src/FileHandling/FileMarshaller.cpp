@@ -3,6 +3,14 @@
 #include "../../include/FileHandling/FileSystem.h"
 #include "../../include/FileHandling/FileParser.h"
 
+FileMarshaller::FileMarshaller(){
+}
+
+FileMarshaller& FileMarshaller::instance(){
+    static FileMarshaller *instance = new FileMarshaller();
+    return *instance;
+}
+
 File* FileMarshaller::InitializeFile(std::string filePath){
     File* tmp = new File(filePath);
     return tmp;
@@ -65,6 +73,10 @@ std::shared_ptr<std::ifstream> FileMarshaller::CreateInfileStream(std::string en
 
 bool FileMarshaller::DoesPathExist(std::string filePath){
     return FileSystem::instance().DoesPathExist(filePath);
+}
+
+bool FileMarshaller::IsValidFile(File& file){
+    return !(file.type == File::FileType::INVALID);
 }
 
 void FileMarshaller::FlagFileForCleanUp(std::string filePath){

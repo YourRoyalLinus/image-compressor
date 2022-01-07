@@ -2,7 +2,6 @@
 #define IMAGECOMPRESSIONENGINE_H
 
 #include "./Batch.h"
-#include "../FileHandling/FileMarshaller.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -18,9 +17,7 @@ class ImageCompressionEngine{
         void DecodeImage(File& currentFile);
         void CreateLocalCopies(File& currentFile);
 
-        Batch batch;
-        FileMarshaller fileMarshaller;
-        
+        Batch batch;        
 };
 
 #endif

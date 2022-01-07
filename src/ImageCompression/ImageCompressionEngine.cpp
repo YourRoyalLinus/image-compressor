@@ -1,19 +1,18 @@
+#include "../../include/FileHandling/FileMarshaller.h"
 #include "../../include/ImageCompression/ImageCompressionEngine.h"
 #include "../../include/ImageCompression/Compressor.h"
 #include <assert.h>
 
-ImageCompressionEngine::ImageCompressionEngine(Batch& b) : batch(b),  fileMarshaller(FileMarshaller()){
+ImageCompressionEngine::ImageCompressionEngine(Batch& b) : batch(b){
 }
 
 bool ImageCompressionEngine::GetNextBatchItem(unsigned short int batchItemId){
     std::string f = batch.inputFiles[batchItemId];
-    std::shared_ptr<File> currentFile = std::shared_ptr<File>(fileMarshaller.InitializeFile(f));
-    fileMarshaller.ParseFile(*currentFile);
+    std::shared_ptr<File> currentFile = std::shared_ptr<File>(FileMarshaller::instance().InitializeFile(f));
+    FileMarshaller::instance().ParseFile(*currentFile);
 
-    //VALIDATE FILE
-    if(currentFile->type == File::FileType::INVALID){
+    if(!Compressor::ValidateFile(*currentFile)){
         batch.InvalidBatchItem();
-        std::cout << currentFile->ext << " compression is not supported" << std::endl;
         return false;
     }
     else{
@@ -24,30 +23,29 @@ bool ImageCompressionEngine::GetNextBatchItem(unsigned short int batchItemId){
 }
 
 void ImageCompressionEngine::EncodeImage(File& currentFile){
-    fileMarshaller.ConvertFileToBMP(currentFile);
+    FileMarshaller::instance().ConvertFileToBMP(currentFile);
 
     std::unique_ptr<HuffmanEncodingContext> encodingContext = Compressor::GetHuffmanEncodingContext(currentFile);
     Compressor::CreateContext(*encodingContext);
-    Compressor::EncodeImageFile(*encodingContext, currentFile, fileMarshaller);
+    Compressor::EncodeImageFile(*encodingContext, currentFile);
     
-    batch.UpdateActiveItemSize(currentFile);
+    batch.UpdateActiveItemSize();
     batch.ValidateBatchItem();   
 }
 
 void ImageCompressionEngine::DecodeImage(File& currentFile){
     std::unique_ptr<HuffmanEncodingContext> encodingContext = Compressor::GetHuffmanEncodingContext(currentFile);
-    Compressor::DecodeImageFile(*encodingContext, currentFile, fileMarshaller);
-
-    batch.UpdateActiveItemSize(currentFile);
+    Compressor::DecodeImageFile(*encodingContext, currentFile);
+    batch.UpdateActiveItemSize();
     batch.ValidateBatchItem();
 }
 
 
 void ImageCompressionEngine::CreateLocalCopies(File& currentFile){
-    std::string inboundFilePath = fileMarshaller.CreateLocalCopy(batch.inboundPath,  currentFile);
-    std::string outboundFilePath = fileMarshaller.CreateLocalCopy(batch.outboundPath, currentFile);
-    assert(fileMarshaller.DoesPathExist(inboundFilePath) && fileMarshaller.DoesPathExist(outboundFilePath));
-    fileMarshaller.UpdateFilePath(batch.outboundPath, currentFile);
+    std::string inboundFilePath = FileMarshaller::instance().CreateLocalCopy(batch.inboundPath,  currentFile);
+    std::string outboundFilePath = FileMarshaller::instance().CreateLocalCopy(batch.outboundPath, currentFile);
+    assert(FileMarshaller::instance().DoesPathExist(inboundFilePath) && FileMarshaller::instance().DoesPathExist(outboundFilePath));
+    FileMarshaller::instance().UpdateFilePath(batch.outboundPath, currentFile);
 }
 
 int ImageCompressionEngine::StartBatchCompression(){ 
@@ -74,6 +72,6 @@ int ImageCompressionEngine::StartBatchCompression(){
         }
     }
     
-    fileMarshaller.CleanUpTempFiles();
+    FileMarshaller::instance().CleanUpTempFiles();
     return batch.CheckBatchStatus();
 }

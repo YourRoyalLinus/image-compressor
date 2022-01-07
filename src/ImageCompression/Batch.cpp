@@ -19,8 +19,8 @@ void Batch::SetActiveItem(std::shared_ptr<File> file){
     
 }
 
-void Batch::UpdateActiveItemSize(File& file){
-    activeItem->endSize = file.size;
+void Batch::UpdateActiveItemSize(){
+    activeItem->endSize = activeItem->_file->size;
 }
 
 void Batch::ItemExecuteStart(){
@@ -32,14 +32,15 @@ void Batch::ItemExecuteEnd(){
 }
 
 void Batch::RecordExecutionResults(){
+    const auto mins = std::chrono::duration_cast<std::chrono::minutes>(activeItem->executeEndTime - activeItem->executeStartTime);
+    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(activeItem->executeEndTime - activeItem->executeStartTime - mins);
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(activeItem->executeEndTime - activeItem->executeStartTime - secs);
+
     std::string operation = (activeItem->isEncoded? "Decoded" : "Encoded");
 
-    std::cout << "Execution Time: " << std::chrono::duration_cast<std::chrono::minutes>(activeItem->executeEndTime - activeItem->executeStartTime).count() << ":" 
-                                    << std::chrono::duration_cast<std::chrono::seconds>(activeItem->executeEndTime - activeItem->executeStartTime).count() << ":"
-                                    << std::chrono::duration_cast<std::chrono::milliseconds>(activeItem->executeEndTime - activeItem->executeStartTime).count() 
-                                    << "s | " //TODO CHANGE LAYOUT TO BETTER REFLECT 0M:0S:0MS
-    << activeItem->originalPath << " | " << operation << " | " "Initial File Size: " << activeItem->startSize << " B | " 
-    << "New File Size: " << activeItem->endSize << " B | " << std::endl;
+    std::cout << "Execution Time (MIN:SEC:MS): " << mins.count() << ":" << secs.count() << ":" << ms.count() << " | "
+    << activeItem->originalPath << " | " << operation << " | " "Initial File Size (Byes): " << activeItem->startSize << " | " 
+    << "New File Size (Bytes): " << activeItem->endSize << " | " << std::endl;
 }
 
 void Batch::InvalidBatchItem(){

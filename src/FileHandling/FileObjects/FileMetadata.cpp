@@ -1,5 +1,5 @@
 #include "../../../include/FileHandling/FileObjects/FileMetadata.h"
-#include "../../../include/Utils/Utils.h"
+#include "../../../include/Utils/GeneralUtility.h"
 
 FileMetadata::FileMetadata(std::string fullFilePath){
     GetPathTokens(fullFilePath);
@@ -7,10 +7,10 @@ FileMetadata::FileMetadata(std::string fullFilePath){
 }
 
 void FileMetadata::GetPathTokens(std::string fullFilePath){
-    pathTokens = Utils::StringSplit(fullFilePath, '/');
+    pathTokens = Utility::StringSplit(fullFilePath, '/');
 }
 
 void FileMetadata::GetPathComponents(){
     unsigned int numberOfPathTokens = pathTokens.size();
-    pathComponents = Utils::StringSplit(pathTokens[numberOfPathTokens-1], '.');
+    pathComponents = Utility::StringSplit(pathTokens[numberOfPathTokens-1], '.');
 }

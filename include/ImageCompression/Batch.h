@@ -17,7 +17,7 @@ class Batch{
 
         std::shared_ptr<File> GetActiveItem();
         void SetActiveItem(std::shared_ptr<File> file);
-        void UpdateActiveItemSize(File& file);
+        void UpdateActiveItemSize();
         
         void ItemExecuteStart();
         void ItemExecuteEnd();

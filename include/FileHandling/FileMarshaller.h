@@ -9,6 +9,7 @@
 
 class FileMarshaller{
     public:
+        static FileMarshaller& instance();
         File* InitializeFile(std::string filePath);
 
         void ParseFile(File& file);
@@ -27,9 +28,12 @@ class FileMarshaller{
         std::shared_ptr<std::ifstream> CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode);
 
         bool DoesPathExist(std::string filePath);
+        bool IsValidFile(File& file);
         
         void FlagFileForCleanUp(std::string filePath);
         void CleanUpTempFiles();
+    protected:
+        FileMarshaller();
     private:
         std::vector<std::string> _cleanUpFiles;
 };
