@@ -36,6 +36,10 @@ std::shared_ptr<std::ofstream> FileSystem::CreateOutfileStream(const std::string
     return f;
 }
 
+std::string FileSystem::GetFileExt(const std::string& filePath){
+    return std::experimental::filesystem::path(filePath).extension();
+}
+
 std::shared_ptr<std::ifstream>FileSystem::CreateInfileStream(const std::string& filePath, std::ios_base::openmode mode){
     std::shared_ptr<std::ifstream> f(new std::ifstream(filePath, mode));
     if (!f->is_open())

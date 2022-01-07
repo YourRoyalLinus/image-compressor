@@ -79,6 +79,9 @@ bool FileMarshaller::IsValidFile(File& file){
     return !(file.type == File::FileType::INVALID);
 }
 
+bool FileMarshaller::IsValidBatchFile(const std::string& batchPath){
+    return (FileSystem::instance().GetFileExt(batchPath) == ".txt");
+}
 void FileMarshaller::FlagFileForCleanUp(std::string filePath){
     _cleanUpFiles.push_back(filePath);
 }

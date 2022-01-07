@@ -29,6 +29,7 @@ class FileMarshaller{
 
         bool DoesPathExist(std::string filePath);
         bool IsValidFile(File& file);
+        bool IsValidBatchFile(const std::string& batchPath);
         
         void FlagFileForCleanUp(std::string filePath);
         void CleanUpTempFiles();
