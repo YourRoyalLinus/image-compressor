@@ -6,8 +6,9 @@
 #include "../Decoding/DecodingStrategy.h"
 #include "../FileHandling/FileMarshaller.h"
 #include "../FileHandling/FileObjects/File.h"
-#include "../ImageHandling/ImageParser.h"
+#include "../ImageHandling/ImageMarshaller.h"
 #include "../ImageHandling/ImageObjects/BMPImage.h"
+
 #include <memory>
 #include <vector>
 
@@ -24,8 +25,8 @@ class EncodingContext : public Context{
         std::shared_ptr<BMPImage> image;        
         
         void BuildImage(){
-            image = std::shared_ptr<BMPImage>(new BMPImage(contextFilePath)); //ImageMarshaller?
-            ImageParser::instance().ParseImage(*image.get()); 
+            image = std::shared_ptr<BMPImage>(new BMPImage(contextFilePath));
+            ImageMarshaller::instance().ParseImage(image); 
         }
 
         std::shared_ptr<BMPImage>GetBMPImage(){
