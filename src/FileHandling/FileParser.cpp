@@ -1,6 +1,6 @@
 #include "../../include/FileHandling/FileParser.h"
 #include <algorithm>
-
+#include <iostream>
 FileParser::FileParser(){
 
 }
@@ -53,7 +53,14 @@ void FileParser::GetFileExt(File& f, const FileMetadata& fileMetadata){
 }
 
 void FileParser::GetFileType(File& f){
-    f.type = extTypeMap.find(f.ext)->second;
+    std::unordered_map<std::string, File::FileType>::iterator iter = extTypeMap.find(f.ext);
+    if(iter == extTypeMap.end()){
+        f.type = File::FileType::INVALID;
+    }
+    else{
+        f.type = iter->second;
+    }
+    
 }
 
 void FileParser::IsCompressed(File& f){

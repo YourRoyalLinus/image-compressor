@@ -1,33 +1,24 @@
 #ifndef HUFFMANENCODINGCONTEXT_H
 #define HUFFMANENCODINGCONTEXT_H
 
-#include "../ContextBuildHelper.h"
 #include "../EncodingContext.h"
-#include "../../Artifacts//Huffman/HuffmanTree.h"
+#include "../../Artifacts//Huffman/HuffmanTreeNode.h"
+#include "../../../include/BinaryHandling/BinaryWriter.h"
 #include <vector>
 #include <string>
 
 class HuffmanEncodingContext : public EncodingContext{
     public:
         HuffmanEncodingContext(const char* filePath);
-        HuffmanEncodingContext(File& f); //NEW
-        ~HuffmanEncodingContext();
+        HuffmanEncodingContext(File& f);
         void Build() override;
-        void Encode(File& currentFile, FileMarshaller& marshaller) override;
-        void Decode(File& currentFile, FileMarshaller& marshaller) override;
-        HuffmanTree* GetHuffmanTree();
-
+        void Encode(File& currentFile) override;
+        void Decode(File& currentFile) override;
     private:
+        std::vector<std::shared_ptr<PixelFrequencies>> pixelFreqs;
         std::shared_ptr<HuffmanTreeNode> rootNode;
-        std::vector<std::string> encodedPixelVec;
-        int encodedPixelDataBits;
 
         void BuildHuffmanContext();
-        std::ofstream GetEncodedFileStream(File& currentFile, FileMarshaller& marshaller);
-        int SeralizeAndWriteTo(std::ofstream& encodedFileStream, unsigned int fileOffset);
-        void WriteHeaderDataTo(std::ofstream& encodedFileStream, unsigned char* headerBuf, int headerBufSize);
-        int WriteEncodedDataTo(std::ofstream& encodedFileStream, int fileOffset);
-        void WriteByteToFile(std::ofstream& encodedFileStream, unsigned char* byteArray);
     
 };
 

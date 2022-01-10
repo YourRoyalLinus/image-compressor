@@ -1,21 +1,21 @@
 #ifndef PIXELFREQUENCIES_H
 #define PIXELFREQUENCIES_H
 
-#include "./Artifact.h"
+#include <memory>
 
-struct PixelFrequencies : public Artifact{
+struct PixelFrequencies{
     public:
         PixelFrequencies(){
-            type = Artifact::ArtifactType::PIXELFREQUENCIES;
         }
-        PixelFrequencies(int maxCodeLength){
-            code = new char[maxCodeLength];
-            type = Artifact::ArtifactType::PIXELFREQUENCIES;
-        }
+        
+        PixelFrequencies(const PixelFrequencies&) = default;
+        
+        PixelFrequencies& operator=(const PixelFrequencies&) = default;
+        
         int pix;
         float freq;
-        char* code;
-        PixelFrequencies *left, *right;  
+        std::string code;
+        std::shared_ptr<PixelFrequencies> left, right;  
 };
 
 #endif

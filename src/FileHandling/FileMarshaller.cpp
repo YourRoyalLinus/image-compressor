@@ -3,6 +3,14 @@
 #include "../../include/FileHandling/FileSystem.h"
 #include "../../include/FileHandling/FileParser.h"
 
+FileMarshaller::FileMarshaller(){
+}
+
+FileMarshaller& FileMarshaller::instance(){
+    static FileMarshaller *instance = new FileMarshaller();
+    return *instance;
+}
+
 File* FileMarshaller::InitializeFile(std::string filePath){
     File* tmp = new File(filePath);
     return tmp;
@@ -23,6 +31,11 @@ void FileMarshaller::ConvertFileToTIFF(File& file){
 void FileMarshaller::UpdateFilePath(std::string newPath, File& file){
     file.relativePath = newPath;
     file.fullPath = newPath + "/" + file.name + "." + file.ext;
+}
+
+void FileMarshaller::UpdateFileExt(File& file, std::string newExt){
+    file.ext = newExt;
+    file.fullPath = file.relativePath + "/" + file.name + "." + file.ext;
 }
 
 long FileMarshaller::GetFileSize(const File& file){
@@ -50,11 +63,11 @@ std::string FileMarshaller::CreateHomePath(){
     return homePath;
 }
 
-std::ofstream FileMarshaller::CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+std::shared_ptr<std::ofstream> FileMarshaller::CreateOutfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
     return FileSystem::instance().CreateOutfileStream(encodedFilePath, mode);
 }
 
-std::ifstream FileMarshaller::CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
+std::shared_ptr<std::ifstream> FileMarshaller::CreateInfileStream(std::string encodedFilePath, std::ios_base::openmode mode){
     return FileSystem::instance().CreateInfileStream(encodedFilePath, mode);
 }
 
@@ -62,42 +75,19 @@ bool FileMarshaller::DoesPathExist(std::string filePath){
     return FileSystem::instance().DoesPathExist(filePath);
 }
 
-bool FileMarshaller::IsValidFileType(std::string fileExt){
-    return FileSystem::instance().IsValidFileType(fileExt);
+bool FileMarshaller::IsValidFile(File& file){
+    return !(file.type == File::FileType::INVALID);
 }
 
-void FileMarshaller::WriteFileToDisk(File& file){
-    int height = 0;
-    int width = 0;
-    long offset = 0;
-    int fileSize = 0;
-    short int bpp = 0;
-    unsigned char header[54];
+bool FileMarshaller::IsValidBatchFile(const std::string& batchPath){
+    return (FileSystem::instance().GetFileExt(batchPath) == ".txt");
+}
+void FileMarshaller::FlagFileForCleanUp(std::string filePath){
+    _cleanUpFiles.push_back(filePath);
+}
 
-    FILE* imgFile = fopen(file.fullPath.c_str(), "rb");
-
-    if (imgFile == nullptr)
-    {
-        //std::cout << "Error opening tmp file" << file.fullPath << std::endl;
-        return;
+void FileMarshaller::CleanUpTempFiles(){
+    for(auto _filePath : _cleanUpFiles){
+        FileSystem::instance().DeleteFile(_filePath);
     }
-
-    // Reader header data into the header array
-    fread(header, sizeof(unsigned char), 54, imgFile);
-    
-    fileSize = *(int*)&header[2];
-    offset = *(int*)&header[10];
-    width = *(int*)&header[18];
-    height = *(int*)&header[22];
-    bpp = *(int*)&header[28];
-
-    // Move stream pointer to the start of the data 
-    fseek(imgFile, offset, SEEK_SET);
-    int pixelDataSize = fileSize - offset;
-    unsigned char* pixelArray = new unsigned char[pixelDataSize+1];
-    fread(pixelArray, sizeof(unsigned char), pixelDataSize, imgFile);
-    pixelArray[pixelDataSize] = '\0';
-
 }
-
-

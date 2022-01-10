@@ -21,6 +21,9 @@ clean:
 	rm -rf $(addprefix build/, $(notdir $(OBJECTS))) $(EXECUTABLE)
 	rm -r build/
 
+debug: CFLAGS +=  -g -Wall -Wextra -pedantic-errors 
+debug: all
+
 ROOT_DIR=lib/
 IMAGE_MAGIC_DIR := $(ROOT_DIR)ImageMagick-Latest/
 CEREAL_DIR := $(ROOT_DIR)Cereal-1.3.0

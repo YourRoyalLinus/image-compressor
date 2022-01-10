@@ -1,4 +1,5 @@
 #include "../../../include/CommandLineHandling/Args/BatchArg.h"
+#include "../../../include/FileHandling/FileMarshaller.h"
 #include <iostream>
 
 BatchArg::BatchArg(std::string filePathParam){
@@ -16,10 +17,15 @@ void BatchArg::SetFlag(){
 
 void BatchArg::ReadInBatchFile(){
     std::fstream batchFile = std::fstream(batchFilePath, std::ios::in);
-    if(!batchFile.is_open()){
-        std::cout << "Unable to open batch file: " << batchFilePath << "\n";
+    if(!FileMarshaller::instance().IsValidBatchFile(batchFilePath)){
+        std::cout << "Invalid Batch File. Only newline seperated \".txt\" batch files are supported" << std::endl;
         exit(-1);
     }
+    else if(!batchFile.is_open()){
+        std::cout << "Unable to open batch file: " << batchFilePath << std::endl;
+        exit(-1);
+    }
+
     CollectFilePathsFromBatchFile(batchFile);
 
 }
