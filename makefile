@@ -1,7 +1,7 @@
 SOURCES=$(shell find ./src -name *.cpp)
 OBJECTS=$(patsubst %.cpp, %.o, $(SOURCES))
 LIBS=-lstdc++fs -L/usr/X11R6/lib -lm -lpthread -lX11
-CFLAGS= -std=gnu++17 -g -Wall -Wextra -pedantic-errors 
+CFLAGS= -std=gnu++17
 CC=g++
 OUTPUT_BIN=/build
 EXECUTABLE=build/compress.exe
@@ -20,6 +20,9 @@ build:
 clean:
 	rm -rf $(addprefix build/, $(notdir $(OBJECTS))) $(EXECUTABLE)
 	rm -r build/
+
+debug: CFLAGS +=  -g -Wall -Wextra -pedantic-errors 
+debug: all
 
 ROOT_DIR=lib/
 IMAGE_MAGIC_DIR := $(ROOT_DIR)ImageMagick-Latest/
