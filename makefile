@@ -1,7 +1,7 @@
 SOURCES=$(shell find ./src -name *.cpp)
 OBJECTS=$(patsubst %.cpp, %.o, $(SOURCES))
 LIBS=-lstdc++fs -L/usr/X11R6/lib -lm -lpthread -lX11
-CFLAGS= -std=gnu++17
+CFLAGS= -std=gnu++17 -I/home/jon/Documents/projects/image-compression/lib/Cereal-1.3.0/include
 CC=g++
 OUTPUT_BIN=/build
 EXECUTABLE=build/compress.exe
