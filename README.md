@@ -15,16 +15,16 @@ Inside each timestamp folder are /inbound and /outbound folders containing the i
 
 #### Single File
 To compress one file: `compress.exe -f "/path/to/file.bmp"`
-  * You can call `compress.exe` without a flag, and the program will prompt you for a file.
   
 To decompress one file: `compress.exe -f "/path/to/compressed_file.jcif"`
   * The default path of a compressed file is: `/home/user/image-compressor/{timestamp}/outbound/{file}.jcif`
 
+You can call `compress.exe` without a flag, and the program will prompt you for a file, or multiple files separated by commas.
 
-#### Multiple Files
-To compress or decompress multiple files in one go, you must provide the path to a batch file. A batch file is a text file that contains file paths for all of the to-be compressed or decompressed files, separated by newlines.
+#### Batch Files
+You can also provide the path to a batch file. A batch file is a text file that contains file paths for all of the to-be compressed or decompressed files, separated by newlines.
 
-To compress or decompress multiple files: `compress.exe -b "/path/to/batch_file.txt"`
+To compress or decompress multiple files using a batch: `compress.exe -b "/path/to/batch_file.txt"` 
   * You can include a mix of compressed and non-compressed files in a batch file
 
 #### JCIF Files
@@ -40,7 +40,7 @@ JCIF files are files that have been encoded/compressed by this program. When the
   ```bash
   username@hostname:~/projects/image-compressor$ build/./compress.exe -file=./images/space.bmp
 
-  Execution Time (MIN:SEC:MS): 0:0:369 | home/user/images/space.bmp | Encoded | Initial File Size (Byes): 720662 | New File Size (Bytes): 659363 |
+  Execution Time (MIN:SEC:MS): 0:0:369 | /home/user/images/space.bmp | Encoded | Initial File Size (Byes): 720662 | New File Size (Bytes): 659363 |
   ```
 
   ```bash
@@ -52,6 +52,14 @@ JCIF files are files that have been encoded/compressed by this program. When the
   Batch completed successfully, however 1 files were unable to be compressed
   ```
 
+  ```bash
+  username@hostname:~/projects/image-compressor$ build/./compress.exe
+  
+  Enter the path of valid file(s) to be compressed. Separate multiple files by a comma (,): ./images/space.bmp, ./images/test1.bmp
+  Execution Time (MIN:SEC:MS): 0:0:370 | /home/user/images/space.bmp | Encoded | Initial File Size (Byes): 720662  | New File Size (Bytes): 659363  | 
+  Execution Time (MIN:SEC:MS): 0:1:340 | /home/user/images/test1.bmp | Encoded | Initial File Size (Byes): 3686538 | New File Size (Bytes): 2561737 |
+  ```
+  
 * **Decompress**
   ```bash
   username@hostname:~/projects/image-compressor$ build/./compress.exe -file=home/user/image-compressor/2022-4-14T15:13:41/outbound/space.jcif
