@@ -54,10 +54,10 @@ std::string FileMarshaller::CreatePath(std::string src, std::string path){
 
 std::string FileMarshaller::CreateHomePath(){
     std::string usrPath = FileSystem::instance().FindUserPath();
-    std::string homePath = usrPath +"/ImageCompressor";
+    std::string homePath = usrPath +"/image-compressor";
 
     if(!FileSystem::instance().DoesPathExist(homePath)){
-        homePath = FileSystem::instance().CreatePath(usrPath, "ImageCompressor");
+        homePath = FileSystem::instance().CreatePath(usrPath, "/image-compressor");
     }
 
     return homePath;
