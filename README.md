@@ -69,7 +69,7 @@ JCIF files are files that have been encoded/compressed by this program. When the
   Execution Time (MIN:SEC:MS): 0:1:340 | /home/user/images/test1.bmp | Encoded | Initial File Size (Byes): 3686538 | New File Size (Bytes): 2561737 |
   ```
   
-* **Decompress**
+* **Decompression**
   ```bash
   username@hostname:~/projects/image-compressor$ build/./compress.exe -file=home/user/image-compressor/2022-4-14T15:13:41/outbound/space.jcif
 
