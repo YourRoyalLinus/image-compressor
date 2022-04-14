@@ -9,23 +9,32 @@ make
 ```
 ## Usage
 
-All results of the image compressor are stored in `/home/user/image-compressor/` and are organized by the program start time.
+All results of the image compressor are stored in `/home/user/image-compressor/` and are compartmentalized by program run time.
 
-Inside each timestamp folder are /inbound and /outbound folders containing the input and output files, respectively.
+Inside each run timestamp folder are /inbound and /outbound folders containing the input and output files, respectively.
 
 #### Single File
-To compress one file: `compress.exe -f "/path/to/file.bmp"`
+To compress a file: 
+```
+compress.exe -f "/path/to/file.bmp"
+````
   
-To decompress one file: `compress.exe -f "/path/to/compressed_file.jcif"`
-  * The default path of a compressed file is: `/home/user/image-compressor/{timestamp}/outbound/{file}.jcif`
+To decompress a file: 
+```
+compress.exe -f "/path/to/compressed_file.jcif"
+```
 
 You can call `compress.exe` without a flag and the program will prompt you for a file, or multiple files separated by commas.
 
 #### Batch Files
 You can also provide the path to a batch file. A batch file is a text file that contains file paths for all of the to-be compressed or decompressed files, separated by newlines.
 
-To compress or decompress multiple files using a batch file: `compress.exe -b "/path/to/batch_file.txt"` 
-  * You can include a mix of compressed and non-compressed files in a batch file
+To compress or decompress multiple files using a batch file: 
+```
+compress.exe -b "/path/to/batch_file.txt"
+```
+You can include a mix of compressed and non-compressed files in a batch file.
+
 
 #### JCIF Files
 JCIF files are files that have been encoded/compressed by this program. When the program encounters a `.jcif` file, it will attempt to decode/decompress it.
