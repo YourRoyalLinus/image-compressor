@@ -19,12 +19,12 @@ To compress one file: `compress.exe -f "/path/to/file.bmp"`
 To decompress one file: `compress.exe -f "/path/to/compressed_file.jcif"`
   * The default path of a compressed file is: `/home/user/image-compressor/{timestamp}/outbound/{file}.jcif`
 
-You can call `compress.exe` without a flag, and the program will prompt you for a file, or multiple files separated by commas.
+You can call `compress.exe` without a flag and the program will prompt you for a file, or multiple files separated by commas.
 
 #### Batch Files
 You can also provide the path to a batch file. A batch file is a text file that contains file paths for all of the to-be compressed or decompressed files, separated by newlines.
 
-To compress or decompress multiple files using a batch: `compress.exe -b "/path/to/batch_file.txt"` 
+To compress or decompress multiple files using a batch file: `compress.exe -b "/path/to/batch_file.txt"` 
   * You can include a mix of compressed and non-compressed files in a batch file
 
 #### JCIF Files
@@ -75,7 +75,7 @@ The minor difference between original file size and the decompressed file size i
 * -h, --help                           Print this message and exit.
 
 ## Future Improvements
-* Optimize for compression/decompression speed
+* Optimize compression/decompression speed
 * Further optimize size of the compressed file 
 * Include support for more file types
 * Include support for additional coding methods (e.g Shannon coding)
